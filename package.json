@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/fenivana/puppeteer-spider#readme",
   "dependencies": {
-    "puppeteer": "0.13.0"
+    "puppeteer": "^0.13.0",
+    "request": "^2.83.0"
   }
 }

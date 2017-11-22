@@ -1,22 +1,28 @@
-const http = require('http')
+const request = require('request')
 const puppeteer = require('puppeteer')
+const { URL } = require('url')
 
-const browser = await puppeteer.launch({
-  args: [
-    '--no-sandbox',
-    '--disable-setuid-sandbox'
-  ]
-})
+request.debug = true
 
-async function getMeta(url) {
-  const req = http.get(url, res => {
-    req.abort()
-    return
+let browser
+
+async function launch() {
+  if (browser) return browser
+
+  browser = await puppeteer.launch({
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox'
+    ]
   })
+
+  return browser
 }
 
-async function loadPage(url, { userAgent, loadImage = true, loadMedia = true }) {
+async function loadPage(url, { userAgent } = {}) {
   url = new URL(url)
+
+  await launch()
 
   const page = await browser.newPage()
 
@@ -24,31 +30,60 @@ async function loadPage(url, { userAgent, loadImage = true, loadMedia = true }) 
 
   await page.setRequestInterception(true)
   page.on('request', req => {
-
+    if (req.resourceType === 'document') {
+      const r = request({
+        url: req.url,
+        headers: req.headers,
+        gzip: true,
+        timeout: 10000
+      }, (e, res, body) => {
+        if (e) {
+          console.log(22222)
+          console.log(e.code, e)
+          switch (e.code) {
+            case 'ETIMEDOUT':
+              req.abort('timedout')
+              break
+            default:
+              req.abort()
+          }
+        } else {
+          req.respond({
+            status: res.statusCode,
+            headers: res.headers,
+            body
+          })
+        }
+      })
+      .on('response', res => {
+        if (!res.headers['content-type'].includes('text/html')) {
+          console.log(11111)
+          r.abort()
+          req.abort()
+        }
+      })
+    } else if (['stylesheet', 'image', 'media', 'font', 'texttrack', 'manifest', 'other'].includes(req.resourceType)) {
+      req.abort()
+    } else {
+      req.continue()
+    }
   })
 
-  await page.goto(url.href, { waitUntil: 'networkidle0' })
-  return page
-}
-
-async function getPageTitle(url, opts) {
   try {
-    const page = await loadPage(url, {
-      loadImage: false,
-      loadMedia: false,
-      ...opts
-    })
+    await page.goto(url.href, { waitUntil: 'networkidle0' })
+    return page
   } catch (e) {
-
+    page.close()
+    throw e
   }
-
-
 }
 
-async function getPageContent(url, opts) {
-
+async function fetchPage(url, opts) {
+  const page = await loadPage(url, opts)
+  const title = await page.title()
+  const content = await page.content()
+  page.close()
+  return { title, content }
 }
 
-async function getPageScreenshot(url, opts) {
-
-}
+module.exports = { fetchPage }
