@@ -34,7 +34,7 @@ function fetchDocument(url, headers) {
       if (e) {
         console.log(22222)
         console.log(e.code, e.message, e)
-        reject(new Error(ERRORS_MAPPING[e.code]))
+        reject(new Error(ERRORS_MAPPING[e.message]))
       } else {
         console.log(4444)
         console.log(res.statusCode)
@@ -62,13 +62,17 @@ function loadPage(url, { userAgent } = {}) {
     await launch()
 
     const page = await browser.newPage()
+    //await page.setExtraHTTPHeaders({ 'x-devtools-emulate-network-conditions-client-id': '' })
 
     if (userAgent) page.setUserAgent(userAgent)
 
     await page.setRequestInterception(true)
     page.on('request', async req => {
+      console.log(req.url)
+      console.log(req.headers)
       if (req.resourceType === 'document') {
         try {
+          delete req.headers['x-devtools-emulate-network-conditions-client-id']
           const res = await fetchDocument(url, req.headers)
           req.respond(res)
         } catch (e) {
