@@ -4,6 +4,10 @@ const { URL } = require('url')
 
 request.debug = true
 
+const ERRORS_MAPPING = {
+  ETIMEDOUT: 'timedout'
+}
+
 let browser
 
 async function launch() {
@@ -19,63 +23,77 @@ async function launch() {
   return browser
 }
 
-async function loadPage(url, { userAgent } = {}) {
-  url = new URL(url)
+function fetchDocument(url, headers) {
+  return new Promise((resolve, reject) => {
+    const req = request({
+      url,
+      headers,
+      gzip: true,
+      timeout: 10000
+    }, (e, res, body) => {
+      if (e) {
+        console.log(22222)
+        console.log(e.code, e.message, e)
+        reject(new Error(ERRORS_MAPPING[e.code]))
+      } else {
+        console.log(4444)
+        console.log(res.statusCode)
+        resolve({
+          status: res.statusCode,
+          headers: res.headers,
+          body
+        })
+      }
+    })
+    .on('response', res => {
+      if (!res.headers['content-type'].includes('text/html')) {
+        console.log(11111)
+        req.abort()
+        reject(new Error('PARSE::ERR_INVALID_FILE_TYPE'))
+      }
+    })
+  })
+}
 
-  await launch()
+function loadPage(url, { userAgent } = {}) {
+  return new Promise(async (resolve, reject) => {
+    url = new URL(url)
 
-  const page = await browser.newPage()
+    await launch()
 
-  if (userAgent) page.setUserAgent(userAgent)
+    const page = await browser.newPage()
 
-  await page.setRequestInterception(true)
-  page.on('request', req => {
-    if (req.resourceType === 'document') {
-      const r = request({
-        url: req.url,
-        headers: req.headers,
-        gzip: true,
-        timeout: 10000
-      }, (e, res, body) => {
-        if (e) {
-          console.log(22222)
-          console.log(e.code, e)
-          switch (e.code) {
-            case 'ETIMEDOUT':
-              req.abort('timedout')
-              break
-            default:
-              req.abort()
+    if (userAgent) page.setUserAgent(userAgent)
+
+    await page.setRequestInterception(true)
+    page.on('request', async req => {
+      if (req.resourceType === 'document') {
+        try {
+          const res = await fetchDocument(url, req.headers)
+          req.respond(res)
+        } catch (e) {
+          if (e.message === 'PARSE::ERR_INVALID_FILE_TYPE') {
+            reject(e)
+            req.abort()
+          } else {
+            req.abort(e.message)
           }
-        } else {
-          req.respond({
-            status: res.statusCode,
-            headers: res.headers,
-            body
-          })
         }
-      })
-      .on('response', res => {
-        if (!res.headers['content-type'].includes('text/html')) {
-          console.log(11111)
-          r.abort()
-          req.abort()
-        }
-      })
-    } else if (['stylesheet', 'image', 'media', 'font', 'texttrack', 'manifest', 'other'].includes(req.resourceType)) {
-      req.abort()
-    } else {
-      req.continue()
+      } else if (['script', 'xhr', 'fetch', 'eventsource', 'websocket'].includes(req.resourceType)) {
+        req.continue()
+      } else {
+        req.abort()
+      }
+    })
+
+    try {
+      await page.goto(url.href, { waitUntil: 'networkidle0' })
+      resolve(page)
+    } catch (e) {
+      page.close()
+      reject(e)
     }
   })
-
-  try {
-    await page.goto(url.href, { waitUntil: 'networkidle0' })
-    return page
-  } catch (e) {
-    page.close()
-    throw e
-  }
 }
 
 async function fetchPage(url, opts) {
