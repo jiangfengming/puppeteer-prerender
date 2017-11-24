@@ -1,6 +1,6 @@
 {
   "name": "puppeteer-spider",
-  "version": "0.1.0-dev",
+  "version": "0.1.0",
   "description": "A web crawler powered by puppeteer",
   "main": "index.js",
   "scripts": {
@@ -25,5 +25,17 @@
   "dependencies": {
     "puppeteer": "^0.13.0",
     "request": "^2.83.0"
+  },
+  "devDependencies": {
+    "babel-eslint": "^8.0.2",
+    "eslint": "^4.11.0",
+    "eslint-config-enough": "^0.2.9"
+  },
+  "eslintConfig": {
+    "parser": "babel-eslint",
+    "extends": "enough",
+    "env": {
+      "node": true
+    }
   }
 }

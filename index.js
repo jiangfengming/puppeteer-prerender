@@ -2,9 +2,13 @@ const request = require('request')
 const puppeteer = require('puppeteer')
 const { URL } = require('url')
 
-request.debug = true
-
 const ERRORS_MAPPING = {
+  EACCES: 'accessdenied',
+  EHOSTUNREACH: 'addressunreachable',
+  ECONNABORTED: 'connectionaborted',
+  ECONNREFUSED: 'connectionrefused',
+  ECONNRESET: 'connectionreset',
+  ENOTFOUND: 'namenotresolved',
   ETIMEDOUT: 'timedout'
 }
 
@@ -23,31 +27,32 @@ async function launch() {
   return browser
 }
 
-function fetchDocument(url, headers) {
+function log(...args) {
+  if (spider.debug) {
+    console.log(...args) // eslint-disable-line
+  }
+}
+
+function fetchDocument(url, headers, timeout) {
   return new Promise((resolve, reject) => {
     const req = request({
       url,
       headers,
       gzip: true,
-      timeout: 10000
+      timeout,
+      followRedirect: false
     }, (e, res, body) => {
       if (e) {
-        console.log(22222)
-        console.log(e.code, e.message, e)
-        reject(new Error(ERRORS_MAPPING[e.message]))
+        reject(new Error(ERRORS_MAPPING[e.code] || 'failed'))
       } else {
-        console.log(4444)
-        console.log(res.statusCode)
         resolve({
           status: res.statusCode,
           headers: res.headers,
           body
         })
       }
-    })
-    .on('response', res => {
-      if (!res.headers['content-type'].includes('text/html')) {
-        console.log(11111)
+    }).on('response', res => {
+      if (res.statusCode >= 200 && res.statusCode < 300 && !res.headers['content-type'].includes('text/html')) {
         req.abort()
         reject(new Error('PARSE::ERR_INVALID_FILE_TYPE'))
       }
@@ -55,26 +60,28 @@ function fetchDocument(url, headers) {
   })
 }
 
-function loadPage(url, { userAgent } = {}) {
-  return new Promise(async (resolve, reject) => {
+function loadPage(url, { userAgent = spider.userAgent, timeout = spider.timeout } = {}) {
+  return new Promise(async(resolve, reject) => {
+    await launch()
     url = new URL(url)
 
-    await launch()
-
     const page = await browser.newPage()
-    //await page.setExtraHTTPHeaders({ 'x-devtools-emulate-network-conditions-client-id': '' })
 
     if (userAgent) page.setUserAgent(userAgent)
 
     await page.setRequestInterception(true)
     page.on('request', async req => {
-      console.log(req.url)
-      console.log(req.headers)
       if (req.resourceType === 'document') {
         try {
           delete req.headers['x-devtools-emulate-network-conditions-client-id']
-          const res = await fetchDocument(url, req.headers)
-          req.respond(res)
+          log(req.resourceType, req.url, req.headers)
+          const res = await fetchDocument(req.url, req.headers, timeout - 1000)
+          if (res.status >= 200 && res.status < 400) {
+            req.respond(res)
+          } else {
+            reject(new Error('HTTP::' + res.status))
+            req.abort()
+          }
         } catch (e) {
           if (e.message === 'PARSE::ERR_INVALID_FILE_TYPE') {
             reject(e)
@@ -84,6 +91,9 @@ function loadPage(url, { userAgent } = {}) {
           }
         }
       } else if (['script', 'xhr', 'fetch', 'eventsource', 'websocket'].includes(req.resourceType)) {
+        const headers = { ...req.headers }
+        delete headers['x-devtools-emulate-network-conditions-client-id']
+        log(req.resourceType, req.url, headers)
         req.continue()
       } else {
         req.abort()
@@ -91,7 +101,10 @@ function loadPage(url, { userAgent } = {}) {
     })
 
     try {
-      await page.goto(url.href, { waitUntil: 'networkidle0' })
+      await page.goto(url.href, {
+        waitUntil: 'networkidle0',
+        timeout
+      })
       resolve(page)
     } catch (e) {
       page.close()
@@ -108,4 +121,11 @@ async function fetchPage(url, opts) {
   return { title, content }
 }
 
-module.exports = { fetchPage }
+const spider = {
+  debug: false,
+  timeout: 30000,
+  userAgent: '',
+  fetchPage
+}
+
+module.exports = spider
