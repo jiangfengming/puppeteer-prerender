@@ -28,7 +28,7 @@ async function launch() {
 }
 
 function log(...args) {
-  if (spider.debug) {
+  if (prerender.debug) {
     console.log(...args) // eslint-disable-line
   }
 }
@@ -60,7 +60,7 @@ function fetchDocument(url, headers, timeout) {
   })
 }
 
-function loadPage(url, { userAgent = spider.userAgent, timeout = spider.timeout } = {}) {
+function loadPage(url, { userAgent = prerender.userAgent, timeout = prerender.timeout } = {}) {
   return new Promise(async(resolve, reject) => {
     await launch()
     url = new URL(url)
@@ -71,11 +71,12 @@ function loadPage(url, { userAgent = spider.userAgent, timeout = spider.timeout 
 
     await page.setRequestInterception(true)
     page.on('request', async req => {
+      log(req.resourceType, req.url, req.headers)
       if (req.resourceType === 'document') {
         try {
           delete req.headers['x-devtools-emulate-network-conditions-client-id']
-          log(req.resourceType, req.url, req.headers)
           const res = await fetchDocument(req.url, req.headers, timeout - 1000)
+          log(res.status, res.headers)
           if (res.status >= 200 && res.status < 400) {
             req.respond(res)
           } else {
@@ -83,6 +84,7 @@ function loadPage(url, { userAgent = spider.userAgent, timeout = spider.timeout 
             req.abort()
           }
         } catch (e) {
+          log(e)
           if (e.message === 'PARSE::ERR_INVALID_FILE_TYPE') {
             reject(e)
             req.abort()
@@ -93,7 +95,6 @@ function loadPage(url, { userAgent = spider.userAgent, timeout = spider.timeout 
       } else if (['script', 'xhr', 'fetch', 'eventsource', 'websocket'].includes(req.resourceType)) {
         const headers = { ...req.headers }
         delete headers['x-devtools-emulate-network-conditions-client-id']
-        log(req.resourceType, req.url, headers)
         req.continue()
       } else {
         req.abort()
@@ -113,7 +114,7 @@ function loadPage(url, { userAgent = spider.userAgent, timeout = spider.timeout 
   })
 }
 
-async function fetchPage(url, opts) {
+async function prerender(url, opts) {
   const page = await loadPage(url, opts)
   const title = await page.title()
   const content = await page.content()
@@ -121,11 +122,8 @@ async function fetchPage(url, opts) {
   return { title, content }
 }
 
-const spider = {
-  debug: false,
-  timeout: 30000,
-  userAgent: '',
-  fetchPage
-}
+prerender.debug = false
+prerender.timeout = 30000
+prerender.userAgent = ''
 
-module.exports = spider
+module.exports = prerender

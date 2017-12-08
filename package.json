@@ -1,35 +1,35 @@
 {
-  "name": "puppeteer-spider",
+  "name": "puppeteer-prerender",
   "version": "0.1.0",
-  "description": "A web crawler powered by puppeteer",
+  "description": "Fetch pre-rendered content of a SPA",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fenivana/puppeteer-spider.git"
+    "url": "git+https://github.com/fenivana/puppeteer-prerender.git"
   },
   "keywords": [
     "puppeteer",
-    "web",
+    "prerender",
     "crawler",
-    "spider"
+    "seo"
   ],
   "author": "Jiang Fengming",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/fenivana/puppeteer-spider/issues"
+    "url": "https://github.com/fenivana/puppeteer-prerender/issues"
   },
-  "homepage": "https://github.com/fenivana/puppeteer-spider#readme",
+  "homepage": "https://github.com/fenivana/puppeteer-prerender#readme",
   "dependencies": {
     "puppeteer": "^0.13.0",
     "request": "^2.83.0"
   },
   "devDependencies": {
-    "babel-eslint": "^8.0.2",
-    "eslint": "^4.11.0",
-    "eslint-config-enough": "^0.2.9"
+    "babel-eslint": "^8.0.3",
+    "eslint": "^4.12.1",
+    "eslint-config-enough": "^0.2.10"
   },
   "eslintConfig": {
     "parser": "babel-eslint",
