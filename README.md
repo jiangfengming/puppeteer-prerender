@@ -1,42 +1,45 @@
-# puppeteer-spider
+# puppeteer-prerender
 A web crawler powered by puppeteer
 
 ## APIs
 
-### spider.fetchPage(url, options)
+### prerender.fetchPage(url, options)
 Fetch the title and content of the page.
 
 ```js
-const spider = require('puppeteer-spider')
+const prerender = require('puppeteer-prerender')
 
 async main() {
-  const result = await spider.fetchPage('https://www.example.com/')
+  const result = await prerender.fetchPage('https://www.example.com/', {
+    timeout: 30000,
+    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36'
+  })
   console.log(result.title, result.content)
 }
 ```
 
 #### Options:
-timeout: Maximum navigation time in milliseconds, defaults to 30 seconds  
-userAgent: Specific user agent to use in this page
+timeout: Maximum navigation time in milliseconds. Defaults to `30000`ms.  
+userAgent: Specific user agent to use in this page. The default is set by the underlying Chrome or Chromium.
 
 
-### spider.debug
-Open or disable debug mode. Defaults to disabled.
+### prerender.debug
+Open or disable debug mode. Defaults to `false`.
 
 ```js
-spider.debug = true
+prerender.debug = true
 ```
 
-### spider.timeout
+### prerender.timeout
 Set the default timeout value.
 
 ```js
-spider.timeout = 20000
+prerender.timeout = 20000
 ```
 
-### spider.userAgent
+### prerender.userAgent
 Set the default user agent.
 
 ```js
-spider.userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36'
+prerender.userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36'
 ```

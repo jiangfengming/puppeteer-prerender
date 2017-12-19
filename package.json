@@ -1,6 +1,6 @@
 {
   "name": "puppeteer-prerender",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Fetch pre-rendered content of a SPA",
   "main": "index.js",
   "scripts": {
