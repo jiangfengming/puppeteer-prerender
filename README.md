@@ -1,16 +1,16 @@
 # puppeteer-prerender
-A web crawler powered by puppeteer
+Fetch the pre-rendered content of a SPA
 
 ## APIs
 
-### prerender.fetchPage(url, options)
+### prerender(url, options)
 Fetch the title and content of the page.
 
 ```js
 const prerender = require('puppeteer-prerender')
 
 async main() {
-  const result = await prerender.fetchPage('https://www.example.com/', {
+  const result = await prerender('https://www.example.com/', {
     timeout: 30000,
     userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36'
   })
