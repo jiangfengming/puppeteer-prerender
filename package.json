@@ -1,6 +1,6 @@
 {
   "name": "puppeteer-prerender",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Fetch the pre-rendered content of a SPA",
   "main": "index.js",
   "scripts": {
@@ -23,13 +23,13 @@
   },
   "homepage": "https://github.com/fenivana/puppeteer-prerender#readme",
   "dependencies": {
-    "puppeteer": "^0.13.0",
+    "puppeteer": "^1.0.0",
     "request": "^2.83.0"
   },
   "devDependencies": {
-    "babel-eslint": "^8.0.3",
-    "eslint": "^4.12.1",
-    "eslint-config-enough": "^0.2.10"
+    "babel-eslint": "^8.2.1",
+    "eslint": "^4.15.0",
+    "eslint-config-enough": "^0.3.0"
   },
   "eslintConfig": {
     "parser": "babel-eslint",
