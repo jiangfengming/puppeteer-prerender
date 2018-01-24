@@ -6,7 +6,7 @@ prerender.userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebK
 
 async function main() {
   try {
-    const { status, redirect, title, content } = await prerender('http://localhost:8080/redirect', { followRedirect: true })
+    const { status, redirect, title, content } = await prerender('https://example.com/')
     console.log({ status, redirect, title, content }) // eslint-disable-line
   } catch (e) {
     console.log(e) // eslint-disable-line

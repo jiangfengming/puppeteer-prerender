@@ -52,7 +52,7 @@ function fetchDocument(url, headers, timeout) {
         })
       }
     }).on('response', res => {
-      if (res.statusCode >= 200 && res.statusCode < 300 && !res.headers['content-type'].includes('text/html')) {
+      if (res.statusCode >= 200 && res.statusCode <= 299 && !res.headers['content-type'].includes('text/html')) {
         req.abort()
         reject(new Error('PARSE::ERR_INVALID_FILE_TYPE'))
       }
@@ -142,8 +142,9 @@ function prerender(url, { userAgent = prerender.userAgent, timeout = prerender.t
 
       resolve({ status, redirect, title, content })
     } catch (e) {
-      page.close()
       reject(e)
+    } finally {
+      page.close()
     }
   })
 }
