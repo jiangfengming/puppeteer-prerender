@@ -1,6 +1,7 @@
 const request = require('request')
 const puppeteer = require('puppeteer')
 const { URL } = require('url')
+const parseOpenGraph = require('parse-open-graph')
 
 const ERRORS_MAPPING = {
   EACCES: 'accessdenied',
@@ -18,6 +19,7 @@ async function launch() {
   if (browser) return browser
 
   browser = await puppeteer.launch({
+    headless: prerender.headless,
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox'
@@ -35,6 +37,8 @@ function log(...args) {
 
 function fetchDocument(url, headers, timeout) {
   return new Promise((resolve, reject) => {
+    request.debug = prerender.debug
+
     const req = request({
       url,
       headers,
@@ -104,7 +108,8 @@ function prerender(url, { userAgent = prerender.userAgent, timeout = prerender.t
               status,
               redirect,
               title: null,
-              content: null
+              content: null,
+              openGraph: null
             })
 
             req.abort()
@@ -133,14 +138,18 @@ function prerender(url, { userAgent = prerender.userAgent, timeout = prerender.t
       })
 
       await page.evaluate(() => {
-        const scripts = document.querySelectorAll('script') // eslint-disable-line
+        // remove <script> tag
+        const scripts = document.querySelectorAll('script')
         scripts.forEach(el => el.parentNode.removeChild(el))
       })
+
+      const documentHandle = await page.evaluateHandle('document')
+      const openGraph = await page.evaluate(parseOpenGraph, documentHandle)
 
       const title = await page.title()
       const content = await page.content()
 
-      resolve({ status, redirect, title, content })
+      resolve({status, redirect, title, content, openGraph })
     } catch (e) {
       reject(e)
     } finally {
@@ -152,5 +161,6 @@ function prerender(url, { userAgent = prerender.userAgent, timeout = prerender.t
 prerender.debug = false
 prerender.timeout = 30000
 prerender.userAgent = ''
+prerender.headless = true
 
 module.exports = prerender

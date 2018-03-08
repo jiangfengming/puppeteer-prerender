@@ -6,7 +6,7 @@ prerender.userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebK
 
 async function main() {
   try {
-    const { status, redirect, title, content } = await prerender('https://example.com/')
+    const { status, redirect, title, content } = await prerender('https://davidwalsh.name/facebook-meta-tags')
     console.log({ status, redirect, title, content }) // eslint-disable-line
   } catch (e) {
     console.log(e) // eslint-disable-line
