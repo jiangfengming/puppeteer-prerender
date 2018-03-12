@@ -1,7 +1,7 @@
 const request = require('request')
 const puppeteer = require('puppeteer')
 const { URL } = require('url')
-const parseOpenGraph = require('parse-open-graph')
+const { parse, parseMetaFromDocument } = require('parse-open-graph')
 
 const ERRORS_MAPPING = {
   EACCES: 'accessdenied',
@@ -137,19 +137,62 @@ function prerender(url, { userAgent = prerender.userAgent, timeout = prerender.t
         timeout
       })
 
-      await page.evaluate(() => {
+      const meta = await page.evaluate(() => {
         // remove <script> tag
         const scripts = document.querySelectorAll('script')
         scripts.forEach(el => el.parentNode.removeChild(el))
+
+        const meta = {
+          title: document.title,
+          description: null,
+          image: null,
+          canonicalUrl: null,
+          author: null,
+          keywords: null
+        }
+
+        ;['author', 'description', 'keywords'].forEach(k => {
+          const el = document.querySelector(`meta[name="${k}"]`)
+          if (el) meta[k] = el.content
+        })
+
+        if (meta.keywords) {
+          meta.keywords = meta.keywords.split(/\s*,\s*/)
+        }
+
+        const link = document.querySelector('link[rel="canonical"]')
+        if (link) meta.canonicalUrl = link.href
+
+        const imgs = document.querySelectorAll('img')
+        for (const img of imgs) {
+          if (img.width >= 200 && img.height >= 200) {
+            meta.image = img.href
+            break
+          }
+        }
+
+        return meta
       })
 
-      const documentHandle = await page.evaluateHandle('document')
-      const openGraph = await page.evaluate(parseOpenGraph, documentHandle)
+      const openGraphMeta = await page.evaluate(parseMetaFromDocument)
+      const openGraph = openGraphMeta.length ? parse(openGraphMeta) : null
 
-      const title = await page.title()
       const content = await page.content()
 
-      resolve({status, redirect, title, content, openGraph })
+      if (openGraph) {
+        if (openGraph.og) {
+          if (openGraph.og.title) meta.title = openGraph.og.title
+          if (openGraph.og.description) meta.description = openGraph.og.description
+          if (openGraph.og.image) meta.image = openGraph.og.image[0].url
+          if (openGraph.og.url) meta.canonicalUrl = openGraph.og.url
+        }
+
+        if (openGraph.article) {
+          if (openGraph.article.tag) meta.keywords = openGraph.article.tag
+        }
+      }
+
+      resolve({ status, redirect, meta, openGraph, content })
     } catch (e) {
       reject(e)
     } finally {

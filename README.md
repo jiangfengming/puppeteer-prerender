@@ -31,6 +31,7 @@ followRedirect: Whether to follow 301/302 redirect. Defaults to `false`.
   status, // HTTP status code
   redirect, // the redirect location if status is 301/302
   title, // page title
+  openGraph, // Open Graph
   content // page content
 }
 ```
