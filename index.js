@@ -137,47 +137,19 @@ function prerender(url, { userAgent = prerender.userAgent, timeout = prerender.t
         timeout
       })
 
-      const meta = await page.evaluate(() => {
-        // remove <script> tag
-        const scripts = document.querySelectorAll('script')
-        scripts.forEach(el => el.parentNode.removeChild(el))
-
-        const meta = {
-          title: document.title,
-          description: null,
-          image: null,
-          canonicalUrl: null,
-          author: null,
-          keywords: null
-        }
-
-        ;['author', 'description', 'keywords'].forEach(k => {
-          const el = document.querySelector(`meta[name="${k}"]`)
-          if (el) meta[k] = el.content
-        })
-
-        if (meta.keywords) {
-          meta.keywords = meta.keywords.split(/\s*,\s*/)
-        }
-
-        const link = document.querySelector('link[rel="canonical"]')
-        if (link) meta.canonicalUrl = link.href
-
-        const imgs = document.querySelectorAll('img')
-        for (const img of imgs) {
-          if (img.width >= 200 && img.height >= 200) {
-            meta.image = img.href
-            break
-          }
-        }
-
-        return meta
-      })
-
       const openGraphMeta = await page.evaluate(parseMetaFromDocument)
       const openGraph = openGraphMeta.length ? parse(openGraphMeta) : null
 
       const content = await page.content()
+
+      let meta = {
+        title: null,
+        description: null,
+        image: null,
+        canonicalUrl: null,
+        author: null,
+        keywords: null
+      }
 
       if (openGraph) {
         if (openGraph.og) {
@@ -191,6 +163,44 @@ function prerender(url, { userAgent = prerender.userAgent, timeout = prerender.t
           if (openGraph.article.tag) meta.keywords = openGraph.article.tag
         }
       }
+
+      meta = await page.evaluate(meta => {
+        // remove <script> tag
+        const scripts = document.querySelectorAll('script')
+        scripts.forEach(el => el.parentNode.removeChild(el))
+
+        if (!meta.title) meta.title = document.title
+
+        const metaAuthor = document.querySelector('meta[name="author"]')
+        if (metaAuthor) meta.author = metaAuthor.content
+
+        if (!meta.description) {
+          const metaDesc = document.querySelector('meta[name="description"]')
+          if (metaDesc) meta.description = metaDesc.content
+        }
+
+        if (!meta.keywords) {
+          const metaKeywords = document.querySelector('meta[name="keywords"]')
+          if (metaKeywords) meta.keywords = metaKeywords.content.split(/\s*,\s*/)
+        }
+
+        if (!meta.canonicalUrl) {
+          const link = document.querySelector('link[rel="canonical"]')
+          if (link) meta.canonicalUrl = link.href
+        }
+
+        if (!meta.image) {
+          const imgs = document.querySelectorAll('img')
+          for (const img of imgs) {
+            if (img.width >= 200 && img.height >= 200) {
+              meta.image = img.href
+              break
+            }
+          }
+        }
+
+        return meta
+      }, meta)
 
       resolve({ status, redirect, meta, openGraph, content })
     } catch (e) {
