@@ -14,6 +14,8 @@ async function main() {
   } catch (e) {
     console.log(e)
   }
+
+  prerender.close()
 }
 
 main()

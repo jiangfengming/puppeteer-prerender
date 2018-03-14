@@ -31,7 +31,7 @@ async function launch() {
 
 function log(...args) {
   if (prerender.debug) {
-    console.log(...args) // eslint-disable-line
+    console.log(...args) // eslint-disable-line no-console
   }
 }
 
@@ -209,6 +209,13 @@ function prerender(url, { userAgent = prerender.userAgent, timeout = prerender.t
       page.close()
     }
   })
+}
+
+prerender.close = async() => {
+  if (browser) {
+    await browser.close()
+    browser = null
+  }
 }
 
 prerender.debug = false

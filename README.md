@@ -70,6 +70,8 @@ The `openGraph` object format:
 
 See [parse-open-graph](https://github.com/fenivana/parse-open-graph#parsemeta) for details.
 
+### prerender.close()
+Closes the underlying browser.
 
 ### prerender.debug
 Open or disable debug mode. Defaults to `false`.
