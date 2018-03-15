@@ -76,12 +76,12 @@ Closes the underlying browser.
 ### prerender.debug
 Open or disable debug mode. Defaults to `false`.
 
-### prerender.headless
-Whether to run the Chromium in headless mode. Defaults to `true`. It should be set before calling `prerender()`, otherwise
-will have no effect.
-
 ### prerender.timeout
 Set the default timeout value. Defaults to `30000`ms.
 
 ### prerender.userAgent
 Set the default user agent. The default value is set by the underlying Chromium.
+
+### prerender.puppeteerLaunchOptions
+Options which passed to puppeteer.launch(). It should be set before calling `prerender()`, otherwise
+will have no effect.

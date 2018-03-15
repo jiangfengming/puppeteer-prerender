@@ -18,13 +18,9 @@ let browser
 async function launch() {
   if (browser) return browser
 
-  browser = await puppeteer.launch({
-    headless: prerender.headless,
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox'
-    ]
-  })
+  log('launch the browser with args:')
+  log(prerender.puppeteerLaunchOptions)
+  browser = await puppeteer.launch(prerender.puppeteerLaunchOptions)
 
   return browser
 }
@@ -221,6 +217,6 @@ prerender.close = async() => {
 prerender.debug = false
 prerender.timeout = 30000
 prerender.userAgent = ''
-prerender.headless = true
+prerender.puppeteerLaunchOptions = null
 
 module.exports = prerender

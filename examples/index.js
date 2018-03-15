@@ -4,8 +4,10 @@ const prerender = require('../')
 
 prerender.timeout = 20000
 prerender.debug = true
-prerender.headless = false
 prerender.userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36'
+prerender.puppeteerLaunchOptions = {
+  headless: false
+}
 
 async function main() {
   try {
