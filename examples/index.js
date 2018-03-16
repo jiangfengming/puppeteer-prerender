@@ -14,7 +14,7 @@ async function main() {
     const { status, redirect, meta, openGraph, content } = await prerender('https://developers.google.com/search/mobile-sites/mobile-seo/separate-urls')
     console.log(JSON.stringify({ content, status, redirect, meta, openGraph }, null, 2))
   } catch (e) {
-    console.log(e)
+    console.error(e)
   }
 
   prerender.close()

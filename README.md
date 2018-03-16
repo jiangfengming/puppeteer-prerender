@@ -11,34 +11,57 @@ Prerender the page of the given `url`.
 const prerender = require('puppeteer-prerender')
 
 async main() {
-  const result = await prerender('https://www.example.com/', {
-    timeout: 20000,
-    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36',
-    followRedirect: false
-  })
-  
-  console.log(result)
+  try {
+    const result = await prerender('https://www.example.com/', {
+      timeout: 20000,
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36',
+      followRedirect: false
+    })
+    
+    console.log(result)
+  } catch (e) {
+    console.error(e)
+  }
+
+  prerender.close()
 }
 ```
 
-#### Options:
-`timeout`: Maximum navigation time in milliseconds. Defaults to `30000`ms.  
-`userAgent`: Specific user agent to use in this page. The default value is set by the underlying Chromium.  
-`followRedirect`: Whether to follow 301/302 redirect. Defaults to `false`.
+#### Params:
+`url`: The URL of the page to render.  
+`options`:
+  * `timeout`: Maximum navigation time in milliseconds. Defaults to `30000`ms.  
+  * `userAgent`: Specific user agent to use in this page. The default value is set by the underlying Chromium.  
+  * `followRedirect`: Whether to follow 301/302 redirect. Defaults to `false`.
 
 #### Returns:
 ```js
 {
   status, // HTTP status code
   redirect, // the redirect location if status is 301/302
+
   meta: {
     title,
-    description,
-    image,
-    canonicalUrl,
-    author,
-    keywords // array
+    description, // <meta property="og:description"> || <meta name="description">
+    image, // <meta property="og:image">
+    canonicalURL, // <meta property="og:url"> || <link rel="canonical">
+
+    // <meta rel="alternate" hreflang="de" href="https://m.example.com/?locale=de">
+    locales: [
+      { lang: 'de', href: 'https://m.example.com/?locale=de' }
+    ],
+
+    // <meta rel="alternate" media="only screen and (max-width: 640px)" href="https://m.example.com/">
+    media: [
+      { media: 'only screen and (max-width: 640px)', href: 'https://m.example.com/' }
+    ],
+
+    author, // <meta name="author">
+
+    // <meta property="article:tag"> || <meta name="keywords">
+    keywords: ['keyword1', 'keyword2']
   },
+
   openGraph, // Open Graph object
   content // page content
 }
@@ -85,3 +108,6 @@ Set the default user agent. The default value is set by the underlying Chromium.
 ### prerender.puppeteerLaunchOptions
 Options which passed to puppeteer.launch(). It should be set before calling `prerender()`, otherwise
 will have no effect.
+
+## License
+MIT
