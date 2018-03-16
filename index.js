@@ -140,11 +140,13 @@ function prerender(url, { userAgent = prerender.userAgent, timeout = prerender.t
 
       let meta = {
         title: null,
+        author: null,
         description: null,
         image: null,
-        canonicalUrl: null,
-        author: null,
-        keywords: null
+        keywords: null,
+        canonicalURL: null,
+        locales: null,
+        media: null
       }
 
       if (openGraph) {
@@ -152,7 +154,7 @@ function prerender(url, { userAgent = prerender.userAgent, timeout = prerender.t
           if (openGraph.og.title) meta.title = openGraph.og.title
           if (openGraph.og.description) meta.description = openGraph.og.description
           if (openGraph.og.image) meta.image = openGraph.og.image[0].url
-          if (openGraph.og.url) meta.canonicalUrl = openGraph.og.url
+          if (openGraph.og.url) meta.canonicalURL = openGraph.og.url
         }
 
         if (openGraph.article) {
@@ -180,9 +182,31 @@ function prerender(url, { userAgent = prerender.userAgent, timeout = prerender.t
           if (metaKeywords) meta.keywords = metaKeywords.content.split(/\s*,\s*/)
         }
 
-        if (!meta.canonicalUrl) {
+        if (!meta.canonicalURL) {
           const link = document.querySelector('link[rel="canonical"]')
-          if (link) meta.canonicalUrl = link.href
+          if (link) meta.canonicalURL = link.href
+        }
+
+        const locales = document.querySelectorAll('link[rel="alternate"][hreflang]')
+        if (locales.length) {
+          meta.locales = []
+          for (const alt of locales) {
+            meta.locales.push({
+              lang: alt.hreflang,
+              href: alt.href
+            })
+          }
+        }
+
+        const media = document.querySelectorAll('link[rel="alternate"][media]')
+        if (media.length) {
+          meta.media = []
+          for (const m of media) {
+            meta.media.push({
+              media: m.media,
+              href: m.href
+            })
+          }
         }
 
         if (!meta.image) {

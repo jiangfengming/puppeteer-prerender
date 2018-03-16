@@ -11,7 +11,7 @@ prerender.puppeteerLaunchOptions = {
 
 async function main() {
   try {
-    const { status, redirect, meta, openGraph, content } = await prerender('https://davidwalsh.name/facebook-meta-tags')
+    const { status, redirect, meta, openGraph, content } = await prerender('https://developers.google.com/search/mobile-sites/mobile-seo/separate-urls')
     console.log(JSON.stringify({ content, status, redirect, meta, openGraph }, null, 2))
   } catch (e) {
     console.log(e)
