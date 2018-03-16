@@ -27,7 +27,7 @@ async main() {
 }
 ```
 
-Params:
+Params:  
 `url`: The URL of the page to render.  
 `options`:
   * `timeout`: Maximum navigation time in milliseconds. Defaults to `30000`ms.  
