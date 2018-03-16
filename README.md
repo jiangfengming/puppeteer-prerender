@@ -27,14 +27,14 @@ async main() {
 }
 ```
 
-#### Params:
+Params:
 `url`: The URL of the page to render.  
 `options`:
   * `timeout`: Maximum navigation time in milliseconds. Defaults to `30000`ms.  
   * `userAgent`: Specific user agent to use in this page. The default value is set by the underlying Chromium.  
   * `followRedirect`: Whether to follow 301/302 redirect. Defaults to `false`.
 
-#### Returns:
+Returns:
 ```js
 {
   status, // HTTP status code
