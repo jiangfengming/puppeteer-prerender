@@ -24,7 +24,7 @@
   },
   "homepage": "https://github.com/fenivana/puppeteer-prerender#readme",
   "dependencies": {
-    "parse-open-graph": "^0.2.1",
+    "parse-open-graph": "^0.2.2",
     "puppeteer": "^1.2.0",
     "request": "^2.85.0"
   },
