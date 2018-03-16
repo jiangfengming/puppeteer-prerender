@@ -1,6 +1,6 @@
 # puppeteer-prerender
 puppeteer-prerender is a library that uses [Puppeteer](https://github.com/GoogleChrome/puppeteer) to fetch the
-pre-rendered content, meta and Open Graph of a Single-page Application (SPA).
+pre-rendered content, meta and [Open Graph](http://ogp.me/) of a Single-page Application (SPA).
 
 ## APIs
 
