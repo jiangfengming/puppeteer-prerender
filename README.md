@@ -1,38 +1,58 @@
 # puppeteer-prerender
 puppeteer-prerender is a library that uses [Puppeteer](https://github.com/GoogleChrome/puppeteer) to fetch the
-pre-rendered content, meta and [Open Graph](http://ogp.me/) of a Single-page Application (SPA).
+pre-rendered content, meta, links, and [Open Graph](http://ogp.me/) of a webpage, especially Single-Page Application (SPA).
 
-## APIs
-
-### prerender(url, options)
-Prerender the page of the given `url`.
-
+## Usage
 ```js
-const prerender = require('puppeteer-prerender')
+const Prerenderer = require('puppeteer-prerender')
 
-async main() {
+async function main() {
+  const prerender = new Prerenderer()
+
   try {
-    const result = await prerender('https://www.example.com/', {
-      timeout: 20000,
-      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36',
-      followRedirect: false
-    })
-    
-    console.log(result)
+    const { status, redirect, meta, openGraph, links, content } = await prerender.render('https://www.example.com/')
+    console.log(JSON.stringify({ content, status, redirect, meta, openGraph, links }, null, 2))
   } catch (e) {
     console.error(e)
   }
 
   prerender.close()
 }
+
+main()
 ```
 
-Params:  
-`url`: The URL of the page to render.  
-`options`:
-  * `timeout`: Maximum navigation time in milliseconds. Defaults to `30000`ms.  
-  * `userAgent`: Specific user agent to use in this page. The default value is set by the underlying Chromium.  
-  * `followRedirect`: Whether to follow 301/302 redirect. Defaults to `false`.
+See [examples/index.js](examples/index.js)
+
+## APIs
+
+### new Prerenderer(options)
+Creates a prerenderer instance.
+
+Default options:
+```js
+{
+  debug: false, // Whether to print debug logs.
+  puppeteerLaunchOptions: null, // Options for puppeteer.launch(). see https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#puppeteerlaunchoptions
+  timeout: 30000, // Maximum navigation time in milliseconds.
+  userAgent: null, // Specific user agent to use in this page. The default value is set by the underlying Chromium.
+  followRedirect: false, // Whether to follow 301/302 redirect.
+  removeScript: true // Whether to remove the <script> tags.
+}
+```
+
+### prerenderer.render(url, options)
+Prerender the page of the given `url`.
+
+These options can be overrided:
+```js
+{
+  timeout,
+  userAgent,
+  followRedirect,
+  removeScript
+}
+```
 
 Returns:
 ```js
@@ -48,21 +68,34 @@ Returns:
 
     // <meta rel="alternate" hreflang="de" href="https://m.example.com/?locale=de">
     locales: [
-      { lang: 'de', href: 'https://m.example.com/?locale=de' }
+      { lang: 'de', href: 'https://m.example.com/?locale=de' },
+      // ...
     ],
 
     // <meta rel="alternate" media="only screen and (max-width: 640px)" href="https://m.example.com/">
     media: [
-      { media: 'only screen and (max-width: 640px)', href: 'https://m.example.com/' }
+      { media: 'only screen and (max-width: 640px)', href: 'https://m.example.com/' },
+      // ...
     ],
 
     author, // <meta name="author">
 
     // <meta property="article:tag"> || <meta name="keywords">
-    keywords: ['keyword1', 'keyword2']
+    keywords: [
+      'keyword1',
+      // ...
+    ]
   },
 
   openGraph, // Open Graph object
+
+  // The absolute URLs of <a> tags. The url's hash has been stripped. And each item is unique and doesn't contain the page itself.
+  // Useful for crawling the next pages.
+  links: [
+    'https://www.example.com/foo?bar=1',
+    // ...
+  ],
+
   content // page content
 }
 ```
@@ -93,21 +126,23 @@ The `openGraph` object format:
 
 See [parse-open-graph](https://github.com/fenivana/parse-open-graph#parsemeta) for details.
 
-### prerender.close()
+### prerenderer.close()
 Closes the underlying browser.
 
-### prerender.debug
-Open or disable debug mode. Defaults to `false`.
+### prerenderer.debug
+Opens or disables debug mode.
 
-### prerender.timeout
-Set the default timeout value. Defaults to `30000`ms.
+### prerenderer.timeout
+Sets the default timeout value.
 
-### prerender.userAgent
-Set the default user agent. The default value is set by the underlying Chromium.
+### prerenderer.userAgent
+Sets the default user agent.
 
-### prerender.puppeteerLaunchOptions
-Options which passed to puppeteer.launch(). It should be set before calling `prerender()`, otherwise
-will have no effect.
+### prerenderer.followRedirect
+Sets the default value of followRedirect.
+
+### prerenderer.removeScript
+Sets the default value of removeScript.
 
 ## License
 MIT

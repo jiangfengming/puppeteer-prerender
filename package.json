@@ -1,8 +1,8 @@
 {
   "name": "puppeteer-prerender",
   "version": "0.4.3",
-  "description": "Fetch the pre-rendered content, meta and Open Graph of a SPA",
-  "main": "index.js",
+  "description": "Fetch the pre-rendered content, meta, links and Open Graph of a webpage, especially Single-Page Application (SPA)",
+  "main": "Prerenderer.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "babel-eslint": "^8.2.2",
-    "eslint": "^4.18.2",
+    "eslint": "^4.19.1",
     "eslint-config-enough": "^0.3.0"
   },
   "eslintConfig": {
