@@ -154,6 +154,16 @@ class Prerenderer {
           timeout
         })
 
+        // if the url was changed via history.pushState/replaceState or <meta http-equiv="refresh">
+        // we mark it as a 302 redirect
+        const pageUrl = await page.url()
+        const pagePath = pageUrl.origin + pageUrl.pathname + pageUrl.search
+        const reqPath = url.origin + url.pathname + url.search
+        if (pagePath !== reqPath) {
+          status = 302
+          redirect = pageUrl.href
+        }
+
         const openGraphMeta = await page.evaluate(parseMetaFromDocument)
         const openGraph = openGraphMeta.length ? parse(openGraphMeta) : null
 
@@ -161,6 +171,7 @@ class Prerenderer {
 
         let meta = {
           title: null,
+          lastModified: null,
           author: null,
           description: null,
           image: null,
@@ -182,6 +193,12 @@ class Prerenderer {
 
           if (openGraph.article) {
             if (openGraph.article.tag) meta.keywords = openGraph.article.tag
+            if (openGraph.article.modified_time) {
+              const date = new Date(openGraph.article.modified_time)
+              if (!isNaN(date.getTime())) {
+                meta.lastModified = date.toISOString()
+              }
+            }
           }
         }
 
@@ -195,6 +212,16 @@ class Prerenderer {
 
           const metaAuthor = document.querySelector('meta[name="author"]')
           if (metaAuthor) meta.author = metaAuthor.content
+
+          if (!meta.lastModified) {
+            const metaLastMod = document.querySelector('meta[http-equiv="last-modified" i]')
+            if (metaLastMod) {
+              const date = new Date(metaLastMod.content)
+              if (!isNaN(date.getTime())) {
+                meta.lastModified = date.toISOString()
+              }
+            }
+          }
 
           if (!meta.description) {
             const metaDesc = document.querySelector('meta[name="description"]')
