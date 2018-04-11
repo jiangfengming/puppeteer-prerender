@@ -77,6 +77,7 @@ class Prerenderer {
   }
 
 
+  // returns: { status, redirect, meta, openGraph, links, content }
   render(url, {
     userAgent = this.userAgent,
     timeout = this.timeout,
@@ -124,9 +125,10 @@ class Prerenderer {
               resolve({
                 status,
                 redirect,
-                title: null,
-                content: null,
-                openGraph: null
+                meta: null,
+                openGraph: null,
+                links: null,
+                content: null
               })
 
               req.abort()
@@ -154,11 +156,25 @@ class Prerenderer {
           timeout
         })
 
+        const metaStatus = await page.evaluate(() => {
+          const meta = document.querySelector('meta[http-equiv="status" i]')
+          if (meta) {
+            const status = parseInt(meta.content)
+            if (!isNaN(status)) return status
+          }
+        })
+
+        if (metaStatus) {
+          status = metaStatus
+        }
+
         // if the url was changed via history.pushState/replaceState or <meta http-equiv="refresh">
         // we mark it as a 302 redirect
         const pageUrl = await page.url()
         const pagePath = pageUrl.origin + pageUrl.pathname + pageUrl.search
         const reqPath = url.origin + url.pathname + url.search
+
+
         if (pagePath !== reqPath) {
           status = 302
           redirect = pageUrl.href
