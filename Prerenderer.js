@@ -91,7 +91,7 @@ class Prerenderer {
       if (userAgent) page.setUserAgent(userAgent)
       await page.setRequestInterception(true)
 
-      let status = null, redirect = null
+      let status = null, redirect = null, meta = null, openGraph = null, links = null, content = null
 
       page.on('request', async req => {
         const resourceType = req.resourceType()
@@ -122,14 +122,7 @@ class Prerenderer {
                 if (followRedirect) return req.respond(res)
               }
 
-              resolve({
-                status,
-                redirect,
-                meta: null,
-                openGraph: null,
-                links: null,
-                content: null
-              })
+              resolve({ status, redirect, meta, openGraph, links, content })
 
               req.abort()
             }
@@ -166,26 +159,20 @@ class Prerenderer {
 
         if (metaStatus) {
           status = metaStatus
-        }
 
-        // if the url was changed via history.pushState/replaceState or <meta http-equiv="refresh">
-        // we mark it as a 302 redirect
-        const pageUrl = await page.url()
-        const pagePath = pageUrl.origin + pageUrl.pathname + pageUrl.search
-        const reqPath = url.origin + url.pathname + url.search
-
-
-        if (pagePath !== reqPath) {
-          status = 302
-          redirect = pageUrl.href
+          if ([301, 302].includes(status)) {
+            redirect = page.url()
+          } else if (status < 200 || status >= 300) {
+            return resolve({ status, redirect, meta, openGraph, links, content })
+          }
         }
 
         const openGraphMeta = await page.evaluate(parseMetaFromDocument)
-        const openGraph = openGraphMeta.length ? parse(openGraphMeta) : null
+        if (openGraphMeta.length) openGraph = parse(openGraphMeta)
 
-        const content = await page.content()
+        content = await page.content()
 
-        let meta = {
+        meta = {
           title: null,
           lastModified: null,
           author: null,
@@ -196,8 +183,6 @@ class Prerenderer {
           locales: null,
           media: null
         }
-
-        let links = null
 
         if (openGraph) {
           if (openGraph.og) {
