@@ -248,7 +248,7 @@ class Prerenderer {
             meta.locales = []
             for (const alt of locales) {
               meta.locales.push({
-                lang: alt.hreflang,
+                hreflang: alt.hreflang,
                 href: alt.href
               })
             }
