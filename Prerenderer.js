@@ -200,6 +200,10 @@ class Prerenderer {
                 meta.lastModified = date.toISOString()
               }
             }
+          } else if (openGraph.video && openGraph.video.tag) {
+            meta.keywords = openGraph.video.tag
+          } else if (openGraph.book && openGraph.book.tag) {
+            meta.keywords = openGraph.book.tag
           }
         }
 
