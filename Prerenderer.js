@@ -19,15 +19,13 @@ class Prerenderer {
     puppeteerLaunchOptions = null,
     timeout = 30000,
     userAgent = null,
-    followRedirect = false,
-    removeScript = true
+    followRedirect = false
   } = {}) {
     this.debug = debug
     this.puppeteerLaunchOptions = puppeteerLaunchOptions
     this.timeout = timeout
     this.userAgent = userAgent
     this.followRedirect = followRedirect
-    this.removeScript = removeScript
     this.browser = null
   }
 
@@ -77,12 +75,11 @@ class Prerenderer {
   }
 
 
-  // returns: { status, redirect, meta, openGraph, links, content }
+  // returns: { status, redirect, meta, openGraph, links, content, contentNoScript }
   render(url, {
     userAgent = this.userAgent,
     timeout = this.timeout,
-    followRedirect = this.followRedirect,
-    removeScript = this.removeScript
+    followRedirect = this.followRedirect
   } = {}) {
     return new Promise(async(resolve, reject) => {
       const browser = await this.launch()
@@ -91,7 +88,13 @@ class Prerenderer {
       if (userAgent) page.setUserAgent(userAgent)
       await page.setRequestInterception(true)
 
-      let status = null, redirect = null, meta = null, openGraph = null, links = null, content = null
+      let status = null,
+        redirect = null,
+        meta = null,
+        openGraph = null,
+        links = null,
+        content = null,
+        contentNoScript = null
 
       page.on('request', async req => {
         const resourceType = req.resourceType()
@@ -170,8 +173,6 @@ class Prerenderer {
         const openGraphMeta = await page.evaluate(parseMetaFromDocument)
         if (openGraphMeta.length) openGraph = parse(openGraphMeta)
 
-        content = await page.content()
-
         meta = {
           title: null,
           lastModified: null,
@@ -207,11 +208,13 @@ class Prerenderer {
           }
         }
 
-        ({ meta, links } = await page.evaluate((meta, removeScript) => {
-          if (removeScript) {
-            const scripts = document.getElementsByTagName('script')
-            ;[...scripts].forEach(el => el.parentNode.removeChild(el))
-          }
+        ({ meta, links, content, contentNoScript } = await page.evaluate(meta => {
+          const content = document.documentElement.outerHTML
+
+          const scripts = document.getElementsByTagName('script')
+          ;[...scripts].forEach(el => el.parentNode.removeChild(el))
+
+          const contentNoScript = document.documentElement.outerHTML
 
           if (!meta.title) meta.title = document.title
 
@@ -285,10 +288,10 @@ class Prerenderer {
             }
           }
 
-          return { meta, links }
-        }, meta, removeScript))
+          return { meta, links, content, contentNoScript }
+        }, meta))
 
-        resolve({ status, redirect, meta, openGraph, links, content })
+        resolve({ status, redirect, meta, openGraph, links, content, contentNoScript })
       } catch (e) {
         reject(e)
       } finally {

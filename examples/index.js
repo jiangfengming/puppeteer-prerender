@@ -15,8 +15,10 @@ async function main() {
   })
 
   try {
-    const { status, redirect, meta, openGraph, links, content } = await prerender.render('https://developers.google.com/search/mobile-sites/mobile-seo/separate-urls')
-    console.log(JSON.stringify({ content, status, redirect, meta, openGraph, links }, null, 2))
+    const { status, redirect, meta, openGraph, links, content, contentNoScript } = await prerender.render('https://developers.google.com/search/mobile-sites/mobile-seo/separate-urls')
+    console.log(content.slice(0, 300))
+    console.log(contentNoScript.slice(0, 300))
+    console.log(JSON.stringify({ status, redirect, meta, openGraph, links }, null, 2))
   } catch (e) {
     console.error(e)
   }
