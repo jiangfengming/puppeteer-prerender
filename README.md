@@ -63,7 +63,7 @@ Returns:
   meta: {
     title,
     description, // <meta property="og:description"> || <meta name="description">
-    image, // <meta property="og:image">
+    image, // <meta property="og:image"> or first <img> which width & height >= 300
     canonicalURL, // <meta property="og:url"> || <link rel="canonical">
 
     // <meta rel="alternate" hreflang="de" href="https://m.example.com/?locale=de">
@@ -80,7 +80,7 @@ Returns:
 
     author, // <meta name="author">
 
-    // <meta property="article:tag"> || <meta name="keywords">
+    // <meta property="article:tag"> || <meta name="keywords"> (split by comma)
     keywords: [
       'keyword1',
       // ...
