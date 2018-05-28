@@ -16,16 +16,18 @@ const ERRORS_MAPPING = {
 class Prerenderer {
   constructor({
     debug = false,
-    puppeteerLaunchOptions = null,
+    puppeteerLaunchOptions,
     timeout = 30000,
-    userAgent = null,
-    followRedirect = false
+    userAgent,
+    followRedirect = false,
+    extraMeta
   } = {}) {
     this.debug = debug
     this.puppeteerLaunchOptions = puppeteerLaunchOptions
     this.timeout = timeout
     this.userAgent = userAgent
     this.followRedirect = followRedirect
+    this.extraMeta = extraMeta
     this.browser = null
   }
 
@@ -75,11 +77,12 @@ class Prerenderer {
   }
 
 
-  // returns: { status, redirect, meta, openGraph, links, content, contentNoScript }
+  // returns: { status, redirect, meta, openGraph, links, html, staticHTML }
   render(url, {
     userAgent = this.userAgent,
     timeout = this.timeout,
-    followRedirect = this.followRedirect
+    followRedirect = this.followRedirect,
+    extraMeta = this.extraMeta
   } = {}) {
     return new Promise(async(resolve, reject) => {
       const browser = await this.launch()
@@ -88,13 +91,7 @@ class Prerenderer {
       if (userAgent) page.setUserAgent(userAgent)
       await page.setRequestInterception(true)
 
-      let status = null,
-        redirect = null,
-        meta = null,
-        openGraph = null,
-        links = null,
-        content = null,
-        contentNoScript = null
+      let status, redirect, meta, openGraph, links, html, staticHTML
 
       page.on('request', async req => {
         const resourceType = req.resourceType()
@@ -125,7 +122,7 @@ class Prerenderer {
                 if (followRedirect) return req.respond(res)
               }
 
-              resolve({ status, redirect, meta, openGraph, links, content })
+              resolve({ status, redirect, meta, openGraph, links, html, staticHTML })
 
               req.abort()
             }
@@ -152,38 +149,10 @@ class Prerenderer {
           timeout
         })
 
-        const metaStatus = await page.evaluate(() => {
-          const meta = document.querySelector('meta[http-equiv="status" i]')
-          if (meta) {
-            const status = parseInt(meta.content)
-            if (!isNaN(status)) return status
-          }
-        })
-
-        if (metaStatus) {
-          status = metaStatus
-
-          if ([301, 302].includes(status)) {
-            redirect = page.url()
-          } else if (status < 200 || status >= 300) {
-            return resolve({ status, redirect, meta, openGraph, links, content })
-          }
-        }
-
         const openGraphMeta = await page.evaluate(parseMetaFromDocument)
         if (openGraphMeta.length) openGraph = parse(openGraphMeta)
 
-        meta = {
-          title: null,
-          lastModified: null,
-          author: null,
-          description: null,
-          image: null,
-          keywords: null,
-          canonicalURL: null,
-          locales: null,
-          media: null
-        }
+        meta = {}
 
         if (openGraph) {
           if (openGraph.og) {
@@ -195,12 +164,6 @@ class Prerenderer {
 
           if (openGraph.article) {
             if (openGraph.article.tag) meta.keywords = openGraph.article.tag
-            if (openGraph.article.modified_time) {
-              const date = new Date(openGraph.article.modified_time)
-              if (!isNaN(date.getTime())) {
-                meta.lastModified = date.toISOString()
-              }
-            }
           } else if (openGraph.video && openGraph.video.tag) {
             meta.keywords = openGraph.video.tag
           } else if (openGraph.book && openGraph.book.tag) {
@@ -208,38 +171,52 @@ class Prerenderer {
           }
         }
 
-        ({ meta, links, content, contentNoScript } = await page.evaluate(meta => {
-          const content = document.documentElement.outerHTML
+        ({ meta, links, html, staticHTML } = await page.evaluate((meta, extraMeta) => {
+          const html = document.documentElement.outerHTML
 
+          // staticHTML
           const scripts = document.getElementsByTagName('script')
           ;[...scripts].forEach(el => el.parentNode.removeChild(el))
 
-          const contentNoScript = document.documentElement.outerHTML
+          // remove on* attributes
+          const snapshot = document.evaluate(
+            '//*[@*[starts-with(name(), "on")]]',
+            document,
+            null,
+            XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE,
+            null
+          )
+
+          for (let i = 0; i < snapshot.snapshotLength; i++) {
+            const el = snapshot.snapshotItem(i)
+            const attrNames = el.getAttributeNames()
+            attrNames.forEach(attr => {
+              if (attr.startsWith('on')) {
+                el.removeAttribute(attr)
+              }
+            })
+          }
+
+          let baseEl = document.getElementsByTagName('base')[0]
+          if (!baseEl) {
+            baseEl = document.createElement('base')
+            baseEl.href = location.href
+            document.head.prepend(baseEl)
+          }
+
+          const staticHTML = document.documentElement.outerHTML
 
           if (!meta.title) meta.title = document.title
 
-          const metaAuthor = document.querySelector('meta[name="author"]')
-          if (metaAuthor) meta.author = metaAuthor.content
+          ;['author', 'description'].forEach(name => {
+            const el = document.querySelector(`meta[name="${name}"]`)
+            if (el) meta[name] = el.content
+          })
 
-          if (!meta.lastModified) {
-            const metaLastMod = document.querySelector('meta[http-equiv="last-modified" i]')
-            if (metaLastMod) {
-              const date = new Date(metaLastMod.content)
-              if (!isNaN(date.getTime())) {
-                meta.lastModified = date.toISOString()
-              }
-            }
-          }
-
-          if (!meta.description) {
-            const metaDesc = document.querySelector('meta[name="description"]')
-            if (metaDesc) meta.description = metaDesc.content
-          }
-
-          if (!meta.keywords) {
-            const metaKeywords = document.querySelector('meta[name="keywords"]')
-            if (metaKeywords) meta.keywords = metaKeywords.content.split(/\s*,\s*/)
-          }
+          ;['robots', 'keywords'].forEach(name => {
+            const el = document.querySelector(`meta[name="${name}"]`)
+            if (el) meta[name] = el.content.split(/\s*,\s*/)
+          })
 
           if (!meta.canonicalURL) {
             const link = document.querySelector('link[rel="canonical"]')
@@ -278,20 +255,27 @@ class Prerenderer {
             }
           }
 
-          const anchors = document.getElementsByTagName('a')
-          const links = []
-          const loc = location.origin + location.pathname + location.search
-          for (const a of anchors) {
-            const link = a.origin + a.pathname + a.search
-            if (['https:', 'http:'].includes(a.protocol) && link !== loc && !links.includes(link)) {
-              links.push(link)
+          let links = new Set()
+          const linkEls = document.links
+          for (const a of linkEls) {
+            links.add(a.href)
+          }
+          links = [...links]
+
+          if (extraMeta) {
+            for (const name of Object.keys(extraMeta)) {
+              const { selector, property } = extraMeta[name]
+              const el = document.querySelector(selector)
+              if (el) {
+                meta[name] = el[property]
+              }
             }
           }
 
-          return { meta, links, content, contentNoScript }
-        }, meta))
+          return { meta, links, html, staticHTML }
+        }, meta, extraMeta))
 
-        resolve({ status, redirect, meta, openGraph, links, content, contentNoScript })
+        resolve({ status, redirect, meta, openGraph, links, html, staticHTML })
       } catch (e) {
         reject(e)
       } finally {

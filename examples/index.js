@@ -15,9 +15,16 @@ async function main() {
   })
 
   try {
-    const { status, redirect, meta, openGraph, links, content, contentNoScript } = await prerender.render('https://developers.google.com/search/mobile-sites/mobile-seo/separate-urls')
-    console.log(content.slice(0, 300))
-    console.log(contentNoScript.slice(0, 300))
+    const { status, redirect, meta, openGraph, links, html, staticHTML } = await prerender.render('http://127.0.0.1:8080/', {
+      extraMeta: {
+        status: { selector: 'meta[http-equiv="Status" i]', property: 'content' },
+        lastModified: { selector: 'meta[http-equiv="Last-Modified" i]', property: 'content' },
+        changefreq: { selector: 'meta[name="sitemap:changefreq"]', property: 'content' },
+        priority: { selector: 'meta[name="sitemap:priority"]', property: 'content' }
+      }
+    })
+    console.log(html)
+    console.log(staticHTML)
     console.log(JSON.stringify({ status, redirect, meta, openGraph, links }, null, 2))
   } catch (e) {
     console.error(e)
