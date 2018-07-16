@@ -20,7 +20,8 @@ class Prerenderer {
     timeout = 30000,
     userAgent,
     followRedirect = false,
-    extraMeta
+    extraMeta,
+    parseOpenGraphOptions
   } = {}) {
     this.debug = debug
     this.puppeteerLaunchOptions = puppeteerLaunchOptions
@@ -28,6 +29,7 @@ class Prerenderer {
     this.userAgent = userAgent
     this.followRedirect = followRedirect
     this.extraMeta = extraMeta
+    this.parseOpenGraphOptions = parseOpenGraphOptions
     this.browser = null
   }
 
@@ -82,7 +84,8 @@ class Prerenderer {
     userAgent = this.userAgent,
     timeout = this.timeout,
     followRedirect = this.followRedirect,
-    extraMeta = this.extraMeta
+    extraMeta = this.extraMeta,
+    parseOpenGraphOptions = this.parseOpenGraphOptions
   } = {}) {
     return new Promise(async(resolve, reject) => {
       const browser = await this.launch()
@@ -149,7 +152,7 @@ class Prerenderer {
           timeout
         })
 
-        const openGraphMeta = await page.evaluate(parseMetaFromDocument)
+        const openGraphMeta = await page.evaluate(parseMetaFromDocument, parseOpenGraphOptions)
         if (openGraphMeta.length) openGraph = parse(openGraphMeta)
 
         meta = {}
