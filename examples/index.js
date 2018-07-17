@@ -21,6 +21,12 @@ async function main() {
         lastModified: { selector: 'meta[http-equiv="Last-Modified" i]', property: 'content' },
         changefreq: { selector: 'meta[name="sitemap:changefreq"]', property: 'content' },
         priority: { selector: 'meta[name="sitemap:priority"]', property: 'content' }
+      },
+      parseOpenGraphOptions: {
+        arrays: [
+          'sitemap:news',
+          'sitemap:image'
+        ]
       }
     })
     console.log(html)
