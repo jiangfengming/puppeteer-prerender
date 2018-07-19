@@ -152,8 +152,8 @@ class Prerenderer {
           timeout
         })
 
-        const openGraphMeta = await page.evaluate(parseMetaFromDocument, parseOpenGraphOptions)
-        if (openGraphMeta.length) openGraph = parse(openGraphMeta)
+        const openGraphMeta = await page.evaluate(parseMetaFromDocument)
+        if (openGraphMeta.length) openGraph = parse(openGraphMeta, parseOpenGraphOptions)
 
         meta = {}
 

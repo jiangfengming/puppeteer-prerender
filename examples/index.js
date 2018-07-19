@@ -23,9 +23,19 @@ async function main() {
         priority: { selector: 'meta[name="sitemap:priority"]', property: 'content' }
       },
       parseOpenGraphOptions: {
+        // these tag has attributes
+        alias: {
+          'sitemap:video:player_loc': 'sitemap:video:player_loc:_',
+          'sitemap:video:restriction': 'sitemap:video:restriction:_',
+          'sitemap:video:platform': 'sitemap:video:platform:_',
+          'sitemap:video:price': 'sitemap:video:price:_',
+          'sitemap:video:uploader': 'sitemap:video:uploader:_'
+        },
+
         arrays: [
-          'sitemap:news',
-          'sitemap:image'
+          'sitemap:image',
+          'sitemap:video',
+          'sitemap:video:tag'
         ]
       }
     })
