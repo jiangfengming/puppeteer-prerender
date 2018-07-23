@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fenivana/puppeteer-prerender.git"
+    "url": "git+https://github.com/kashajs/puppeteer-prerender.git"
   },
   "keywords": [
     "puppeteer",
@@ -20,16 +20,16 @@
   "author": "Jiang Fengming",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/fenivana/puppeteer-prerender/issues"
+    "url": "https://github.com/kashajs/puppeteer-prerender/issues"
   },
-  "homepage": "https://github.com/fenivana/puppeteer-prerender#readme",
+  "homepage": "https://github.com/kashajs/puppeteer-prerender#readme",
   "dependencies": {
     "puppeteer": "^1.6.0",
     "request": "^2.87.0"
   },
   "devDependencies": {
     "babel-eslint": "^8.2.6",
-    "eslint": "^5.1.0",
+    "eslint": "^5.2.0",
     "eslint-config-enough": "^0.3.4",
     "parse-open-graph": "^0.3.2"
   },
