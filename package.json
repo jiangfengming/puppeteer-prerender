@@ -24,14 +24,14 @@
   },
   "homepage": "https://github.com/kashajs/puppeteer-prerender#readme",
   "dependencies": {
+    "parse-open-graph": "^0.3.2",
     "puppeteer": "^1.6.0",
     "request": "^2.87.0"
   },
   "devDependencies": {
     "babel-eslint": "^8.2.6",
     "eslint": "^5.2.0",
-    "eslint-config-enough": "^0.3.4",
-    "parse-open-graph": "^0.3.2"
+    "eslint-config-enough": "^0.3.4"
   },
   "eslintConfig": {
     "parser": "babel-eslint",
