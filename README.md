@@ -33,11 +33,12 @@ Default options:
 ```js
 {
   debug: false, // Whether to print debug logs.
-  puppeteerLaunchOptions: null, // Options for puppeteer.launch(). see https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#puppeteerlaunchoptions
+  puppeteerLaunchOptions: undefined, // Options for puppeteer.launch(). see https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#puppeteerlaunchoptions
   timeout: 30000, // Maximum navigation time in milliseconds.
   userAgent: null, // Specific user agent to use in this page. The default value is set by the underlying Chromium.
   followRedirect: false, // Whether to follow 301/302 redirect.
-  removeScript: true // Whether to remove the <script> tags.
+  extraMeta: undefined,
+  parseOpenGraphOptions: undefined // Options for parse-open-graph. see https://github.com/kashajs/parse-open-graph#parsemeta-options
 }
 ```
 
@@ -50,7 +51,7 @@ These options can be overrided:
   timeout,
   userAgent,
   followRedirect,
-  removeScript
+  parseOpenGraphOptions
 }
 ```
 
@@ -64,7 +65,7 @@ Returns:
     title,
     description, // <meta property="og:description"> || <meta name="description">
     image, // <meta property="og:image"> or first <img> which width & height >= 300
-    canonicalURL, // <meta property="og:url"> || <link rel="canonical">
+    canonicalURL, // <link rel="canonical"> || <meta property="og:url">
 
     // <meta rel="alternate" hreflang="de" href="https://m.example.com/?locale=de">
     locales: [
@@ -96,7 +97,8 @@ Returns:
     // ...
   ],
 
-  content // page content
+  html // page html
+  staticHTML // static html (scripts removed)
 }
 ```
 
@@ -140,9 +142,6 @@ Sets the default user agent.
 
 ### prerenderer.followRedirect
 Sets the default value of followRedirect.
-
-### prerenderer.removeScript
-Sets the default value of removeScript.
 
 ## License
 MIT
