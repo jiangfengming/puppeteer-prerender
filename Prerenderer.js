@@ -221,10 +221,8 @@ class Prerenderer {
             if (el) meta[name] = el.content.split(/\s*,\s*/)
           })
 
-          if (!meta.canonicalURL) {
-            const link = document.querySelector('link[rel="canonical"]')
-            if (link) meta.canonicalURL = link.href
-          }
+          const link = document.querySelector('link[rel="canonical"]')
+          if (link) meta.canonicalURL = link.href
 
           const locales = document.querySelectorAll('link[rel="alternate"][hreflang]')
           if (locales.length) {
