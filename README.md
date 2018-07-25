@@ -1,6 +1,6 @@
 # puppeteer-prerender
 puppeteer-prerender is a library that uses [Puppeteer](https://github.com/GoogleChrome/puppeteer) to fetch the
-pre-rendered content, meta, links, and [Open Graph](http://ogp.me/) of a webpage, especially Single-Page Application (SPA).
+pre-rendered html, meta, links, and [Open Graph](http://ogp.me/) of a webpage, especially Single-Page Application (SPA).
 
 ## Usage
 ```js
@@ -35,15 +35,26 @@ Default options:
   debug: false, // Whether to print debug logs.
   puppeteerLaunchOptions: undefined, // Options for puppeteer.launch(). see https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#puppeteerlaunchoptions
   timeout: 30000, // Maximum navigation time in milliseconds.
-  userAgent: null, // Specific user agent to use in this page. The default value is set by the underlying Chromium.
+  userAgent: undefined, // Specific user agent to use in this page. The default value is set by the underlying Chromium.
   followRedirect: false, // Whether to follow 301/302 redirect.
-  extraMeta: undefined,
+  extraMeta: undefined, // extra meta tags to parse.
   parseOpenGraphOptions: undefined // Options for parse-open-graph. see https://github.com/kashajs/parse-open-graph#parsemeta-options
 }
 ```
 
+`extraMeta` example:
+```js
+{
+  status: { selector: 'meta[http-equiv="Status" i]', property: 'content' },
+  icon: { selector: 'link[rel~="icon"]', property: 'href' }
+}
+```
+
+The property name is the name of property which will be set in `result.meta` object. `selector` is the parameter of `document.querySelector()`
+which used to select the element. `property` is the property of the selected element which contains the value.
+
 ### prerenderer.render(url, options)
-Prerender the page of the given `url`.
+Prerenders the page of the given `url`.
 
 These options can be overrided:
 ```js
@@ -51,11 +62,12 @@ These options can be overrided:
   timeout,
   userAgent,
   followRedirect,
+  extraMeta,
   parseOpenGraphOptions
 }
 ```
 
-Returns:
+Return format:
 ```js
 {
   status, // HTTP status code
@@ -86,6 +98,10 @@ Returns:
       'keyword1',
       // ...
     ]
+
+    /*
+      extraMeta will also be set in here
+    */
   },
 
   openGraph, // Open Graph object
@@ -142,6 +158,13 @@ Sets the default user agent.
 
 ### prerenderer.followRedirect
 Sets the default value of followRedirect.
+
+### prerender.extraMeta
+Sets the default value of extraMeta.
+
+### prerender.parseOpenGraphOptions
+Sets the default value of parseOpenGraphOptions.
+
 
 ## License
 MIT

@@ -18,9 +18,7 @@ async function main() {
     const { status, redirect, meta, openGraph, links, html, staticHTML } = await prerender.render('http://127.0.0.1:8080/', {
       extraMeta: {
         status: { selector: 'meta[http-equiv="Status" i]', property: 'content' },
-        lastModified: { selector: 'meta[http-equiv="Last-Modified" i]', property: 'content' },
-        changefreq: { selector: 'meta[name="sitemap:changefreq"]', property: 'content' },
-        priority: { selector: 'meta[name="sitemap:priority"]', property: 'content' }
+        lastModified: { selector: 'meta[http-equiv="Last-Modified" i]', property: 'content' }
       },
       parseOpenGraphOptions: {
         // these tag has attributes
