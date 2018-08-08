@@ -126,7 +126,7 @@ Return format:
 
   openGraph, // Open Graph object
 
-  // The absolute URLs of <a> tags. The url's hash has been stripped. And each item is unique and doesn't contain the page itself.
+  // The absolute URLs of <a> tags.
   // Useful for crawling the next pages.
   links: [
     'https://www.example.com/foo?bar=1',
