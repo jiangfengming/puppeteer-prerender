@@ -21,7 +21,8 @@ class Prerenderer {
     userAgent,
     followRedirect = false,
     extraMeta,
-    parseOpenGraphOptions
+    parseOpenGraphOptions,
+    appendSearchParams
   } = {}) {
     this.debug = debug
     this.puppeteerLaunchOptions = puppeteerLaunchOptions
@@ -31,6 +32,7 @@ class Prerenderer {
     this.extraMeta = extraMeta
     this.parseOpenGraphOptions = parseOpenGraphOptions
     this.browser = null
+    this.appendSearchParams = appendSearchParams
   }
 
   log(...args) {
@@ -85,7 +87,8 @@ class Prerenderer {
     timeout = this.timeout,
     followRedirect = this.followRedirect,
     extraMeta = this.extraMeta,
-    parseOpenGraphOptions = this.parseOpenGraphOptions
+    parseOpenGraphOptions = this.parseOpenGraphOptions,
+    appendSearchParams = this.appendSearchParams
   } = {}) {
     return new Promise(async(resolve, reject) => {
       const browser = await this.launch()
@@ -98,7 +101,7 @@ class Prerenderer {
 
       page.on('request', async req => {
         const resourceType = req.resourceType()
-        const url = req.url()
+        let url = req.url()
         const headers = req.headers()
         this.log(resourceType, url, headers)
 
@@ -110,6 +113,14 @@ class Prerenderer {
           }
 
           try {
+            if (appendSearchParams) {
+              url = new URL(url)
+              for (const [name, value] of Object.entries(appendSearchParams)) {
+                url.searchParams.append(name, value)
+              }
+              url = url.href
+            }
+
             delete headers['x-devtools-emulate-network-conditions-client-id']
             const res = await this.fetchDocument(url, headers, timeout - 1000)
             this.log(res.status, res.headers)

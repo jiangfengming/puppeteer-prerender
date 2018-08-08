@@ -32,17 +32,20 @@ Creates a prerenderer instance.
 Default options:
 ```js
 {
-  debug: false, // Whether to print debug logs.
-  puppeteerLaunchOptions: undefined, // Options for puppeteer.launch(). see https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#puppeteerlaunchoptions
-  timeout: 30000, // Maximum navigation time in milliseconds.
-  userAgent: undefined, // Specific user agent to use in this page. The default value is set by the underlying Chromium.
-  followRedirect: false, // Whether to follow 301/302 redirect.
-  extraMeta: undefined, // extra meta tags to parse.
-  parseOpenGraphOptions: undefined // Options for parse-open-graph. see https://github.com/kashajs/parse-open-graph#parsemeta-options
+  debug: false, // Boolean. Whether to print debug logs.
+  puppeteerLaunchOptions: undefined, // Object. Options for puppeteer.launch(). see https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#puppeteerlaunchoptions
+  timeout: 30000, // Number. Maximum navigation time in milliseconds.
+  userAgent: undefined, // String. Specific user agent to use in this page. The default value is set by the underlying Chromium.
+  followRedirect: false, // Boolean. Whether to follow 301/302 redirect.
+  extraMeta: undefined, // Object. Extra meta tags to parse.
+  parseOpenGraphOptions: undefined // Object. Options for parse-open-graph. see https://github.com/kashajs/parse-open-graph#parsemeta-options
+  appendSearchParams: undefined // Object. Intercept the document request and append search params before sending.
 }
 ```
 
-`extraMeta` example:
+#### extraMeta
+Extra meta tags to parse. e.g.:
+
 ```js
 {
   status: { selector: 'meta[http-equiv="Status" i]', property: 'content' },
@@ -52,6 +55,22 @@ Default options:
 
 The property name is the name of property which will be set in `result.meta` object. `selector` is the parameter of `document.querySelector()`
 which used to select the element. `property` is the property of the selected element which contains the value.
+
+#### appendSearchParams
+Intercept the document request and append search params before sending. e.g.:
+
+```js
+{
+  _no_prerender: '1'
+}
+```
+
+If the page URL is http://www.example.com/, it will be rewrited to http://www.example.com?_no_prerender=1 when fetching the document.
+But the address won't change. So `location.href` still is http://www.example.com/
+
+It is used to set a flag on the URL so your server will know this request is from puppeteer-prerender.
+User-Agent alone can't pass through the CDN.
+
 
 ### prerenderer.render(url, options)
 Prerenders the page of the given `url`.
@@ -63,7 +82,8 @@ These options can be overrided:
   userAgent,
   followRedirect,
   extraMeta,
-  parseOpenGraphOptions
+  parseOpenGraphOptions,
+  appendSearchParams
 }
 ```
 
@@ -165,6 +185,8 @@ Sets the default value of extraMeta.
 ### prerender.parseOpenGraphOptions
 Sets the default value of parseOpenGraphOptions.
 
+### prerender.appendSearchParams
+Sets the default value of appendSearchParams.
 
 ## License
 MIT
