@@ -38,7 +38,7 @@ Default options:
   userAgent: undefined, // String. Specific user agent to use in this page. The default value is set by the underlying Chromium.
   followRedirect: false, // Boolean. Whether to follow 301/302 redirect.
   extraMeta: undefined, // Object. Extra meta tags to parse.
-  parseOpenGraphOptions: undefined // Object. Options for parse-open-graph. see https://github.com/kashajs/parse-open-graph#parsemeta-options
+  parseOpenGraphOptions: undefined // Object. Options for parse-open-graph. see https://github.com/kasha-io/parse-open-graph#parsemeta-options
   appendSearchParams: undefined // Object. Intercept the document request and append search params before sending.
 }
 ```
