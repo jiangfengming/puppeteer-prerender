@@ -93,7 +93,9 @@ class Prerenderer {
     return new Promise(async(resolve, reject) => {
       const browser = await this.launch()
       url = new URL(url)
-      const page = await browser.newPage()
+
+      const context = await browser.createIncognitoBrowserContext()
+      const page = await context.newPage()
       if (userAgent) page.setUserAgent(userAgent)
       await page.setRequestInterception(true)
 
@@ -125,19 +127,17 @@ class Prerenderer {
             const res = await this.fetchDocument(url, headers, timeout - 1000)
             this.log(res.status, res.headers)
 
-            if (res.status >= 200 && res.status <= 299) {
-              status = res.status
+            status = res.status
+
+            if ([301, 302].includes(status)) {
+              redirect = res.headers.location
+              if (followRedirect) return req.respond(res)
+            }
+
+            if (res.body) {
               req.respond(res)
             } else {
-              status = res.status
-
-              if ([301, 302].includes(res.status)) {
-                redirect = res.headers.location
-                if (followRedirect) return req.respond(res)
-              }
-
               resolve({ status, redirect, meta, openGraph, links, html, staticHTML })
-
               req.abort()
             }
           } catch (e) {
@@ -291,7 +291,12 @@ class Prerenderer {
       } catch (e) {
         reject(e)
       } finally {
-        page.close()
+        try {
+          await page.close()
+          await context.close()
+        } catch (e) {
+          // UnhandledPromiseRejectionWarning will be thrown if page.close() is called after browser.close()
+        }
       }
     })
   }

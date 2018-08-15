@@ -45,7 +45,7 @@ async function main() {
     console.error(e)
   }
 
-  prerender.close()
+  await prerender.close()
 }
 
 main()
