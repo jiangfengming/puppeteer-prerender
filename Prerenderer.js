@@ -99,7 +99,13 @@ class Prerenderer {
       if (userAgent) page.setUserAgent(userAgent)
       await page.setRequestInterception(true)
 
-      let status, redirect, meta, openGraph, links, html, staticHTML
+      let status = null
+      let redirect = null
+      let meta = null
+      let openGraph = null
+      let links = null
+      let html = null
+      let staticHTML = null
 
       page.on('request', async req => {
         const resourceType = req.resourceType()
@@ -220,7 +226,7 @@ class Prerenderer {
 
           const staticHTML = document.documentElement.outerHTML
 
-          if (!meta.title) meta.title = document.title
+          if (!meta.title && document.title) meta.title = document.title
 
           ;['author', 'description'].forEach(name => {
             const el = document.querySelector(`meta[name="${name}"]`)
@@ -284,7 +290,12 @@ class Prerenderer {
             }
           }
 
-          return { meta, links, html, staticHTML }
+          return {
+            meta: Object.keys(meta).length ? meta : null,
+            links: links.length ? links : null,
+            html,
+            staticHTML
+          }
         }, meta, extraMeta))
 
         resolve({ status, redirect, meta, openGraph, links, html, staticHTML })
