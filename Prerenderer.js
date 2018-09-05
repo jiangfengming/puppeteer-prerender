@@ -93,9 +93,7 @@ class Prerenderer {
     return new Promise(async(resolve, reject) => {
       const browser = await this.launch()
       url = new URL(url)
-
-      const context = await browser.createIncognitoBrowserContext()
-      const page = await context.newPage()
+      const page = await browser.newPage()
       if (userAgent) page.setUserAgent(userAgent)
       await page.setRequestInterception(true)
 
@@ -304,7 +302,6 @@ class Prerenderer {
       } finally {
         try {
           await page.close()
-          await context.close()
         } catch (e) {
           // UnhandledPromiseRejectionWarning will be thrown if page.close() is called after browser.close()
         }
