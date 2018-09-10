@@ -153,7 +153,7 @@ class Prerenderer {
               req.abort(e.message)
             }
           }
-        } else if (['script', 'xhr', 'fetch', 'eventsource', 'websocket'].includes(resourceType)) {
+        } else if (['script', 'xhr', 'fetch', 'eventsource', 'websocket', 'other'].includes(resourceType)) {
           req.continue()
         } else {
           this.log('abort', url)
