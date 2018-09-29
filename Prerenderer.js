@@ -190,6 +190,13 @@ class Prerenderer {
         }
 
         ({ meta, links, html, staticHTML } = await page.evaluate((meta, extraMeta) => {
+          let baseEl = document.getElementsByTagName('base')[0]
+          if (!baseEl) {
+            baseEl = document.createElement('base')
+            baseEl.href = location.href
+            document.head.prepend(baseEl)
+          }
+
           const html = document.documentElement.outerHTML
 
           // staticHTML
@@ -213,13 +220,6 @@ class Prerenderer {
                 el.removeAttribute(attr)
               }
             })
-          }
-
-          let baseEl = document.getElementsByTagName('base')[0]
-          if (!baseEl) {
-            baseEl = document.createElement('base')
-            baseEl.href = location.href
-            document.head.prepend(baseEl)
           }
 
           const staticHTML = document.documentElement.outerHTML
