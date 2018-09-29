@@ -37,7 +37,12 @@ async function main() {
   })
 
   try {
-    const { status, redirect, meta, openGraph, links, html, staticHTML } = await prerender.render('http://127.0.0.1:8080/')
+    const { status, redirect, meta, openGraph, links, html, staticHTML } = await prerender.render('http://127.0.0.1/foo', {
+      rewrites: [
+        [/^http:\/\/127\.0\.0\.1\/(.*)/, 'https://www.example.com/$1'],
+        [/^https:\/\/www\.googletagmanager\.com\//, ''] // block analytic scripts
+      ]
+    })
     console.log(html)
     console.log(staticHTML)
     console.log(JSON.stringify({ status, redirect, meta, openGraph, links }, null, 2))

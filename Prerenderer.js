@@ -2,6 +2,7 @@ const request = require('request')
 const puppeteer = require('puppeteer')
 const { URL } = require('url')
 const { parse, parseMetaFromDocument } = require('parse-open-graph')
+const urlRewrite = require('./urlRewrite')
 
 const ERRORS_MAPPING = {
   EACCES: 'accessdenied',
@@ -22,7 +23,8 @@ class Prerenderer {
     followRedirect = false,
     extraMeta,
     parseOpenGraphOptions,
-    appendSearchParams
+    appendSearchParams,
+    rewrites
   } = {}) {
     this.debug = debug
     this.puppeteerLaunchOptions = puppeteerLaunchOptions
@@ -33,6 +35,7 @@ class Prerenderer {
     this.parseOpenGraphOptions = parseOpenGraphOptions
     this.browser = null
     this.appendSearchParams = appendSearchParams
+    this.rewrites = rewrites
   }
 
   log(...args) {
@@ -88,7 +91,8 @@ class Prerenderer {
     followRedirect = this.followRedirect,
     extraMeta = this.extraMeta,
     parseOpenGraphOptions = this.parseOpenGraphOptions,
-    appendSearchParams = this.appendSearchParams
+    appendSearchParams = this.appendSearchParams,
+    rewrites = this.rewrites
   } = {}) {
     return new Promise(async(resolve, reject) => {
       const browser = await this.launch()
@@ -111,6 +115,20 @@ class Prerenderer {
         const headers = req.headers()
         this.log(resourceType, url, headers)
 
+        if (rewrites) {
+          const url2 = urlRewrite(url, rewrites)
+          if (url !== url2) {
+            this.log(`${url} rewrites to ${url2}`)
+          }
+
+          if (!url2) {
+            this.log('abort', url)
+            return req.abort()
+          } else {
+            url = url2
+          }
+        }
+
         if (resourceType === 'document') {
           // abort iframe request
           if (req.frame() !== page.mainFrame()) {
@@ -129,7 +147,7 @@ class Prerenderer {
 
             delete headers['x-devtools-emulate-network-conditions-client-id']
             const res = await this.fetchDocument(url, headers, timeout - 1000)
-            this.log(res.status, res.headers)
+            this.log(url, 'status:', res.status, 'headers:', res.headers)
 
             status = res.status
 
