@@ -63,11 +63,16 @@ class Prerenderer {
         headers,
         gzip: true,
         timeout,
-        followRedirect: false
+        followRedirect: false,
+        encoding: null
       }, (e, res, body) => {
         if (e) {
           reject(new Error(ERRORS_MAPPING[e.code] || 'failed'))
         } else {
+          delete res.headers['content-disposition']
+          delete res.headers['content-encoding']
+          delete res.headers['content-length']
+
           resolve({
             status: res.statusCode,
             headers: res.headers,
