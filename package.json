@@ -29,8 +29,8 @@
     "request": "^2.88.0"
   },
   "devDependencies": {
-    "babel-eslint": "^9.0.0",
-    "eslint": "^5.3.0",
+    "babel-eslint": "^10.0.1",
+    "eslint": "^5.6.1",
     "eslint-config-enough": "^0.3.4"
   },
   "eslintConfig": {
