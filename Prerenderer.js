@@ -124,13 +124,19 @@ class Prerenderer {
           const url2 = urlRewrite(url, rewrites)
           if (url !== url2) {
             this.log(`${url} rewrites to ${url2}`)
-          }
 
-          if (!url2) {
-            this.log('abort', url)
-            return req.abort()
-          } else {
-            url = url2
+            if (!url2) {
+              this.log('abort', url)
+              return req.abort()
+            } else {
+              url = url2
+              try {
+                headers.host = new URL(url).host
+              } catch (e) {
+                this.log('Invalid url:', url)
+                return req.abort()
+              }
+            }
           }
         }
 
@@ -177,7 +183,7 @@ class Prerenderer {
             }
           }
         } else if (['script', 'xhr', 'fetch', 'eventsource', 'websocket', 'other'].includes(resourceType)) {
-          req.continue()
+          req.continue({ url, headers })
         } else {
           this.log('abort', url)
           req.abort()
@@ -212,16 +218,18 @@ class Prerenderer {
           }
         }
 
-        ({ meta, links, html, staticHTML } = await page.evaluate((meta, extraMeta) => {
+        await page.evaluate(() => {
           let baseEl = document.getElementsByTagName('base')[0]
           if (!baseEl) {
             baseEl = document.createElement('base')
             baseEl.href = location.href
             document.head.prepend(baseEl)
           }
+        })
 
-          const html = document.documentElement.outerHTML
+        html = await page.content()
 
+        ;({ meta, links } = await page.evaluate((meta, extraMeta) => {
           // staticHTML
           const scripts = document.getElementsByTagName('script')
           ;[...scripts].forEach(el => el.parentNode.removeChild(el))
@@ -244,8 +252,6 @@ class Prerenderer {
               }
             })
           }
-
-          const staticHTML = document.documentElement.outerHTML
 
           if (!meta.title && document.title) meta.title = document.title
 
@@ -313,11 +319,11 @@ class Prerenderer {
 
           return {
             meta: Object.keys(meta).length ? meta : null,
-            links: links.length ? links : null,
-            html,
-            staticHTML
+            links: links.length ? links : null
           }
         }, meta, extraMeta))
+
+        staticHTML = await page.content()
 
         resolve({ status, redirect, meta, openGraph, links, html, staticHTML })
       } catch (e) {
