@@ -44,6 +44,18 @@ class Prerenderer {
     }
   }
 
+  time(name) {
+    if (this.debug) {
+      console.time(name) // eslint-disable-line no-console
+    }
+  }
+
+  timeEnd(name) {
+    if (this.debug) {
+      console.timeEnd(name) // eslint-disable-line no-console
+    }
+  }
+
   async launch() {
     if (this.browser) return this.browser
 
@@ -102,9 +114,12 @@ class Prerenderer {
     return new Promise(async(resolve, reject) => {
       const browser = await this.launch()
       url = new URL(url)
+
+      this.time('openTab')
       const page = await browser.newPage()
       if (userAgent) page.setUserAgent(userAgent)
       await page.setRequestInterception(true)
+      this.timeEnd('openTab')
 
       let status = null
       let redirect = null
@@ -191,11 +206,14 @@ class Prerenderer {
       })
 
       try {
+        this.time('gotoURL')
         await page.goto(url.href, {
           waitUntil: 'networkidle0',
           timeout
         })
+        this.timeEnd('gotoURL')
 
+        this.time('parseDoc')
         const openGraphMeta = await page.evaluate(parseMetaFromDocument)
         if (openGraphMeta.length) openGraph = parse(openGraphMeta, parseOpenGraphOptions)
 
@@ -324,6 +342,7 @@ class Prerenderer {
         }, meta, extraMeta))
 
         staticHTML = await page.content()
+        this.timeEnd('parseDoc')
 
         resolve({ status, redirect, meta, openGraph, links, html, staticHTML })
       } catch (e) {
