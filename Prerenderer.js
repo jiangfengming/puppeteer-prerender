@@ -72,7 +72,7 @@ class Prerenderer {
         gzip: true,
         timeout,
         followRedirect: false,
-        encoding: null
+        encoding: null // return body as buffer
       }, (e, res, body) => {
         if (e) {
           reject(new Error(ERRORS_MAPPING[e.code] || 'failed'))
@@ -329,7 +329,9 @@ class Prerenderer {
           let links = new Set()
           const linkEls = document.links
           for (const a of linkEls) {
-            links.add(a.href)
+            if (a.protocol !== 'javascript:') {
+              links.add(a.href)
+            }
           }
           links = [...links]
 
