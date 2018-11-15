@@ -220,6 +220,7 @@ class Prerenderer {
         ])
 
         timerGotoURL()
+        await page.setRequestInterception(false)
 
         const timerParseDoc = this.timer('parseDoc')
         const openGraphMeta = await page.evaluate(parseMetaFromDocument)
