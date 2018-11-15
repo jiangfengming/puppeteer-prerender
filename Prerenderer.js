@@ -64,11 +64,13 @@ class Prerenderer {
     return this.browser
   }
 
-  fetchDocument(url, headers, timeout) {
+  fetchResource({ resourceType, method, url, headers, body, timeout }) {
     return new Promise((resolve, reject) => {
       const req = request({
+        method,
         url,
         headers,
+        body,
         gzip: true,
         timeout,
         followRedirect: false,
@@ -88,7 +90,8 @@ class Prerenderer {
           })
         }
       }).on('response', res => {
-        if (res.statusCode >= 200 && res.statusCode <= 299 && !res.headers['content-type'].includes('text/html')) {
+        if (resourceType === 'document' && res.statusCode >= 200 && res.statusCode <= 299
+          && !res.headers['content-type'].includes('text/html')) {
           req.abort()
           reject(new Error('PARSE::ERR_INVALID_FILE_TYPE'))
         }
@@ -128,7 +131,7 @@ class Prerenderer {
         const resourceType = req.resourceType()
         let url = req.url()
         const headers = req.headers()
-        this.debug(resourceType, url)
+        delete headers['x-devtools-emulate-network-conditions-client-id']
 
         if (rewrites) {
           const url2 = urlRewrite(url, rewrites)
@@ -166,8 +169,8 @@ class Prerenderer {
               url = url.href
             }
 
-            delete headers['x-devtools-emulate-network-conditions-client-id']
-            const res = await this.fetchDocument(url, headers, timeout - 1000)
+            this.debug(resourceType, url)
+            const res = await this.fetchResource({ resourceType, url, headers, timeout: timeout - 1000 })
             this.debug({ url, status: res.status, headers: res.headers })
 
             status = res.status
@@ -192,10 +195,24 @@ class Prerenderer {
               req.abort(e.message)
             }
           }
-        } else if (['script', 'xhr', 'fetch', 'eventsource', 'websocket', 'other'].includes(resourceType)) {
-          req.continue({ url, headers })
+        } else if (['script', 'xhr', 'fetch'].includes(resourceType)) {
+          try {
+            const method = req.method()
+            const body = req.postData()
+            this.debug(method, resourceType, url)
+            const res = await this.fetchResource({ resourceType, method, url, headers, body, timeout: 5000 })
+            this.debug(url, res.status)
+            if (res.body) {
+              req.respond(res)
+            } else {
+              req.abort()
+            }
+          } catch (e) {
+            this.debug(e)
+            req.abort(e.message)
+          }
         } else {
-          this.debug('abort', url)
+          // this.debug('abort', resourceType, url)
           req.abort()
         }
       })
@@ -220,7 +237,6 @@ class Prerenderer {
         ])
 
         timerGotoURL()
-        await page.setRequestInterception(false)
 
         const timerParseDoc = this.timer('parseDoc')
         const openGraphMeta = await page.evaluate(parseMetaFromDocument)
