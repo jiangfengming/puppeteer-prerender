@@ -1,5 +1,6 @@
 const request = require('request')
 const puppeteer = require('puppeteer')
+const { TimeoutError } = require('puppeteer/Errors')
 const { URL } = require('url')
 const { parse, parseMetaFromDocument } = require('parse-open-graph')
 const urlRewrite = require('./urlRewrite')
@@ -26,7 +27,16 @@ class Prerenderer {
     appendSearchParams,
     rewrites
   } = {}) {
-    this.debug = debug
+    if (debug instanceof Function) {
+      this.debug = debug
+    } else if (debug === true) {
+      this.debug = (...args) => {
+        console.log(...args) // eslint-disable-line no-console
+      }
+    } else {
+      this.debug = () => {}
+    }
+
     this.puppeteerLaunchOptions = puppeteerLaunchOptions
     this.timeout = timeout
     this.userAgent = userAgent
@@ -38,29 +48,17 @@ class Prerenderer {
     this.rewrites = rewrites
   }
 
-  log(...args) {
-    if (this.debug) {
-      console.log(...args) // eslint-disable-line no-console
-    }
-  }
-
-  time(name) {
-    if (this.debug) {
-      console.time(name) // eslint-disable-line no-console
-    }
-  }
-
-  timeEnd(name) {
-    if (this.debug) {
-      console.timeEnd(name) // eslint-disable-line no-console
+  timer(name) {
+    const time = Date.now()
+    return () => {
+      this.debug(`${name}: ${Date.now() - time}ms`)
     }
   }
 
   async launch() {
     if (this.browser) return this.browser
 
-    this.log('launch the browser with args:')
-    this.log(this.puppeteerLaunchOptions)
+    this.debug('launch the browser with args:', this.puppeteerLaunchOptions)
     this.browser = await puppeteer.launch(this.puppeteerLaunchOptions)
 
     return this.browser
@@ -68,8 +66,6 @@ class Prerenderer {
 
   fetchDocument(url, headers, timeout) {
     return new Promise((resolve, reject) => {
-      request.debug = this.debug
-
       const req = request({
         url,
         headers,
@@ -100,7 +96,6 @@ class Prerenderer {
     })
   }
 
-
   // returns: { status, redirect, meta, openGraph, links, html, staticHTML }
   render(url, {
     userAgent = this.userAgent,
@@ -115,11 +110,11 @@ class Prerenderer {
       const browser = await this.launch()
       url = new URL(url)
 
-      this.time('openTab')
+      const timerOpenTab = this.timer('open tab')
       const page = await browser.newPage()
       if (userAgent) page.setUserAgent(userAgent)
       await page.setRequestInterception(true)
-      this.timeEnd('openTab')
+      timerOpenTab()
 
       let status = null
       let redirect = null
@@ -133,22 +128,22 @@ class Prerenderer {
         const resourceType = req.resourceType()
         let url = req.url()
         const headers = req.headers()
-        this.log(resourceType, url, headers)
+        this.debug({ resourceType, url, headers })
 
         if (rewrites) {
           const url2 = urlRewrite(url, rewrites)
           if (url !== url2) {
-            this.log(`${url} rewrites to ${url2}`)
+            this.debug(`${url} rewrites to ${url2}`)
 
             if (!url2) {
-              this.log('abort', url)
+              this.debug('abort', url)
               return req.abort()
             } else {
               url = url2
               try {
                 headers.host = new URL(url).host
               } catch (e) {
-                this.log('Invalid url:', url)
+                this.debug('Invalid URL', url)
                 return req.abort()
               }
             }
@@ -158,7 +153,7 @@ class Prerenderer {
         if (resourceType === 'document') {
           // abort iframe request
           if (req.frame() !== page.mainFrame()) {
-            this.log('abort', url)
+            this.debug('abort', url)
             return req.abort()
           }
 
@@ -173,7 +168,7 @@ class Prerenderer {
 
             delete headers['x-devtools-emulate-network-conditions-client-id']
             const res = await this.fetchDocument(url, headers, timeout - 1000)
-            this.log(url, 'status:', res.status, 'headers:', res.headers)
+            this.debug({ url, status: res.status, headers: res.headers })
 
             status = res.status
 
@@ -189,7 +184,7 @@ class Prerenderer {
               req.abort()
             }
           } catch (e) {
-            this.log(e)
+            this.debug(e)
             if (e.message === 'PARSE::ERR_INVALID_FILE_TYPE') {
               reject(e)
               req.abort()
@@ -200,20 +195,33 @@ class Prerenderer {
         } else if (['script', 'xhr', 'fetch', 'eventsource', 'websocket', 'other'].includes(resourceType)) {
           req.continue({ url, headers })
         } else {
-          this.log('abort', url)
+          this.debug('abort', url)
           req.abort()
         }
       })
 
       try {
-        this.time('gotoURL')
-        await page.goto(url.href, {
-          waitUntil: 'networkidle0',
-          timeout
-        })
-        this.timeEnd('gotoURL')
+        const timerGotoURL = this.timer(`goto ${url.href}`)
 
-        this.time('parseDoc')
+        await Promise.race([
+          page.goto(url.href, {
+            waitUntil: 'networkidle0',
+            timeout
+          }).catch(e => {
+            if (e instanceof TimeoutError) {
+              // https://github.com/GoogleChrome/puppeteer/issues/3471
+              // nop
+            } else {
+              throw e
+            }
+          }),
+
+          page.waitFor(() => window.PAGE_READY)
+        ])
+
+        timerGotoURL()
+
+        const timerParseDoc = this.timer('parseDoc')
         const openGraphMeta = await page.evaluate(parseMetaFromDocument)
         if (openGraphMeta.length) openGraph = parse(openGraphMeta, parseOpenGraphOptions)
 
@@ -342,7 +350,7 @@ class Prerenderer {
         }, meta, extraMeta))
 
         staticHTML = await page.content()
-        this.timeEnd('parseDoc')
+        timerParseDoc()
 
         resolve({ status, redirect, meta, openGraph, links, html, staticHTML })
       } catch (e) {
