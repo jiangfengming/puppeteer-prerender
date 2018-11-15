@@ -128,7 +128,7 @@ class Prerenderer {
         const resourceType = req.resourceType()
         let url = req.url()
         const headers = req.headers()
-        this.debug({ resourceType, url, headers })
+        this.debug(resourceType, url)
 
         if (rewrites) {
           const url2 = urlRewrite(url, rewrites)
