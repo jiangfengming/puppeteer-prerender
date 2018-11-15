@@ -32,14 +32,35 @@ Creates a prerenderer instance.
 Default options:
 ```js
 {
-  debug: false, // Boolean. Whether to print debug logs.
-  puppeteerLaunchOptions: undefined, // Object. Options for puppeteer.launch(). see https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#puppeteerlaunchoptions
-  timeout: 30000, // Number. Maximum navigation time in milliseconds.
-  userAgent: undefined, // String. Specific user agent to use in this page. The default value is set by the underlying Chromium.
-  followRedirect: false, // Boolean. Whether to follow 301/302 redirect.
-  extraMeta: undefined, // Object. Extra meta tags to parse.
-  parseOpenGraphOptions: undefined // Object. Options for parse-open-graph. see https://github.com/kasha-io/parse-open-graph#parsemeta-options
-  appendSearchParams: undefined // Object. Intercept the document request and append search params before sending.
+  // Boolean | Function. Whether to print debug logs.
+  // You can provide your custom log function, it should accept same arguments as console.log()
+  debug: false,
+
+  // Object. Options for puppeteer.launch().
+  // see https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#puppeteerlaunchoptions
+  puppeteerLaunchOptions: undefined,
+
+  // Number. Maximum navigation time in milliseconds.
+  timeout: 30000,
+
+  // String. Specific user agent to use in this page. The default value is set by the underlying Chromium.
+  userAgent: undefined,
+
+  // Boolean. Whether to follow 301/302 redirect.
+  followRedirect: false,
+
+  // Object. Extra meta tags to parse.
+  extraMeta: undefined,
+  
+  // Object. Options for parse-open-graph.
+  // see https://github.com/kasha-io/parse-open-graph#parsemeta-options
+  parseOpenGraphOptions: undefined,
+  
+  // Object. Intercept the document request and append search params before sending.
+  appendSearchParams: undefined,
+
+  // Array. Rewrite URL to another location.
+  rewrites: undefined
 }
 ```
 
@@ -71,9 +92,22 @@ But the address won't change. So `location.href` still is http://www.example.com
 It is used to set a flag on the URL so your server will know this request is from puppeteer-prerender.
 User-Agent alone can't pass through the CDN.
 
+#### rewrites
+```js
+const result = await prerender.render('http://127.0.0.1/foo', {
+  rewrites: [
+    [/^http:\/\/127\.0\.0\.1\//, 'https://www.example.com/'], // host rewrite
+    [/^https:\/\/www\.googletagmanager\.com\/.*/, ''] // block analytic scripts
+  ]
+})
+```
+The page will load from `https://www.example.com/foo` instead of `http://127.0.0.1/foo`.
+And requests to `https://www.googletagmanager.com/*` will be blocked.
 
 ### prerenderer.render(url, options)
 Prerenders the page of the given `url`.
+
+Returns: Promise.
 
 These options can be overrided:
 ```js
@@ -83,7 +117,8 @@ These options can be overrided:
   followRedirect,
   extraMeta,
   parseOpenGraphOptions,
-  appendSearchParams
+  appendSearchParams,
+  rewrites
 }
 ```
 
@@ -163,6 +198,9 @@ The `openGraph` object format:
 ```
 
 See [parse-open-graph](https://github.com/fenivana/parse-open-graph#parsemeta) for details.
+
+Due to [this issue](https://github.com/GoogleChrome/puppeteer/issues/3471), `prerenderer.render()` will not reject on `TimeoutError`.
+You can manually set `window.PAGE_READY = true` to tell render function the page is ready, and avoid timeout problem.
 
 ### prerenderer.close()
 Closes the underlying browser.

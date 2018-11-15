@@ -39,7 +39,7 @@ async function main() {
   try {
     const { status, redirect, meta, openGraph, links, html, staticHTML } = await prerender.render('http://127.0.0.1/foo', {
       rewrites: [
-        [/^http:\/\/127\.0\.0\.1/, 'https://www.example.com'], // host rewrite
+        [/^http:\/\/127\.0\.0\.1\//, 'https://www.example.com/'], // host rewrite
         [/^https:\/\/www\.googletagmanager\.com\/.*/, ''] // block analytic scripts
       ]
     })
