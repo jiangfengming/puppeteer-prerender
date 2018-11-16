@@ -1,6 +1,5 @@
 const request = require('request')
 const puppeteer = require('puppeteer')
-const { TimeoutError } = require('puppeteer/Errors')
 const { URL } = require('url')
 const { parse, parseMetaFromDocument } = require('parse-open-graph')
 const urlRewrite = require('./urlRewrite')
@@ -224,13 +223,6 @@ class Prerenderer {
           page.goto(url.href, {
             waitUntil: 'networkidle0',
             timeout
-          }).catch(e => {
-            if (e instanceof TimeoutError) {
-              // https://github.com/GoogleChrome/puppeteer/issues/3471
-              // nop
-            } else {
-              throw e
-            }
           }),
 
           page.waitFor(() => window.PAGE_READY)
