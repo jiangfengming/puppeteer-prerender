@@ -194,7 +194,7 @@ class Prerenderer {
               req.abort(e.message)
             }
           }
-        } else if (['script', 'xhr', 'fetch'].includes(resourceType)) {
+        } else if (['script', 'xhr', 'fetch', 'eventsource', 'other'].includes(resourceType)) {
           try {
             const method = req.method()
             const body = req.postData()
@@ -211,7 +211,7 @@ class Prerenderer {
             req.abort(e.message)
           }
         } else {
-          // this.debug('abort', resourceType, url)
+          this.debug('abort', resourceType, url)
           req.abort()
         }
       })
