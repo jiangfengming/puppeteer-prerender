@@ -227,4 +227,4 @@ Sets the default value of parseOpenGraphOptions.
 Sets the default value of appendSearchParams.
 
 ## License
-MIT
+[MIT](LICENSE)
