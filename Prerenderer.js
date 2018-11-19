@@ -179,7 +179,7 @@ class Prerenderer {
               if (followRedirect) return req.respond(res)
             }
 
-            if (res.body) {
+            if (res.body.length) {
               req.respond(res)
             } else {
               resolve({ status, redirect, meta, openGraph, links, html, staticHTML })
