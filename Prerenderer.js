@@ -231,9 +231,26 @@ class Prerenderer {
         timerGotoURL()
 
         const timerParseDoc = this.timer('parseDoc')
-        const openGraphMeta = await page.evaluate(parseMetaFromDocument)
-        if (openGraphMeta.length) openGraph = parse(openGraphMeta, parseOpenGraphOptions)
 
+        // html
+        await page.evaluate(() => {
+          let baseEl = document.getElementsByTagName('base')[0]
+          if (!baseEl) {
+            baseEl = document.createElement('base')
+            baseEl.href = location.href
+            document.head.prepend(baseEl)
+          }
+        })
+
+        html = await page.content()
+
+        // open graph
+        const openGraphMeta = await page.evaluate(parseMetaFromDocument)
+        if (openGraphMeta.length) {
+          openGraph = parse(openGraphMeta, parseOpenGraphOptions)
+        }
+
+        // extract meta info from open graph
         meta = {}
 
         if (openGraph) {
@@ -253,19 +270,9 @@ class Prerenderer {
           }
         }
 
-        await page.evaluate(() => {
-          let baseEl = document.getElementsByTagName('base')[0]
-          if (!baseEl) {
-            baseEl = document.createElement('base')
-            baseEl.href = location.href
-            document.head.prepend(baseEl)
-          }
-        })
-
-        html = await page.content()
-
-        ;({ meta, links } = await page.evaluate((meta, extraMeta) => {
+        ({ meta, links } = await page.evaluate((meta, extraMeta) => {
           // staticHTML
+          // remove <script> tags
           const scripts = document.getElementsByTagName('script')
           ;[...scripts].forEach(el => el.parentNode.removeChild(el))
 
@@ -286,6 +293,28 @@ class Prerenderer {
                 el.removeAttribute(attr)
               }
             })
+          }
+
+          // remove <a href="javascript:*">
+          // and collect links
+          let links = new Set()
+          const linkEls = document.links
+          for (const a of linkEls) {
+            if (a.protocol === 'javascript:') {
+              a.href = '#'
+            } else {
+              links.add(a.href)
+            }
+          }
+          links = [...links]
+
+          // remove conditional comments
+          // no need to keep comments
+          // so actually we can remove all comments
+          const nodeIterator = document.createNodeIterator(document.documentElement, NodeFilter.SHOW_COMMENT)
+          let node
+          while (node = nodeIterator.nextNode()) { // eslint-disable-line no-cond-assign
+            node.parentNode.removeChild(node)
           }
 
           if (!meta.title && document.title) meta.title = document.title
@@ -334,15 +363,6 @@ class Prerenderer {
               }
             }
           }
-
-          let links = new Set()
-          const linkEls = document.links
-          for (const a of linkEls) {
-            if (a.protocol !== 'javascript:') {
-              links.add(a.href)
-            }
-          }
-          links = [...links]
 
           if (extraMeta) {
             for (const name of Object.keys(extraMeta)) {
