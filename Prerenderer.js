@@ -109,14 +109,16 @@ class Prerenderer {
     rewrites = this.rewrites
   } = {}) {
     return new Promise(async(resolve, reject) => {
-      const browser = await this.launch()
-      url = new URL(url)
+      let browser, page
+      try {
+        browser = await this.launch()
 
-      const timerOpenTab = this.timer('open tab')
-      const page = await browser.newPage()
-      if (userAgent) page.setUserAgent(userAgent)
-      await page.setRequestInterception(true)
-      timerOpenTab()
+        const timerOpenTab = this.timer('open tab')
+        page = await browser.newPage()
+        timerOpenTab()
+      } catch (e) {
+        return reject(e)
+      }
 
       let status = null
       let redirect = null
@@ -217,7 +219,12 @@ class Prerenderer {
       })
 
       try {
+        url = new URL(url)
+
         const timerGotoURL = this.timer(`goto ${url.href}`)
+
+        if (userAgent) await page.setUserAgent(userAgent)
+        await page.setRequestInterception(true)
 
         await Promise.race([
           page.goto(url.href, {
