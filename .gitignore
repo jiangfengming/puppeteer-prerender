@@ -1,3 +1,5 @@
+.vscode/sftp.json
+
 # Logs
 logs
 *.log
