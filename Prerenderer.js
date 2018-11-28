@@ -117,7 +117,8 @@ class Prerenderer {
         page = await browser.newPage()
         timerOpenTab()
       } catch (e) {
-        return reject(e)
+        reject(e)
+        return
       }
 
       let status = null
@@ -129,39 +130,42 @@ class Prerenderer {
       let staticHTML = null
 
       page.on('request', async req => {
-        const resourceType = req.resourceType()
-        let url = req.url()
-        const headers = req.headers()
-        delete headers['x-devtools-emulate-network-conditions-client-id']
+        try {
+          const resourceType = req.resourceType()
+          let url = req.url()
+          const headers = req.headers()
+          delete headers['x-devtools-emulate-network-conditions-client-id']
 
-        if (rewrites) {
-          const url2 = urlRewrite(url, rewrites)
-          if (url !== url2) {
-            this.debug(`${url} rewrites to ${url2}`)
+          if (rewrites) {
+            const url2 = urlRewrite(url, rewrites)
+            if (url !== url2) {
+              this.debug(`${url} rewrites to ${url2}`)
 
-            if (!url2) {
-              this.debug('abort', url)
-              return req.abort()
-            } else {
-              url = url2
-              try {
-                headers.host = new URL(url).host
-              } catch (e) {
-                this.debug('Invalid URL', url)
-                return req.abort()
+              if (!url2) {
+                this.debug('abort', url)
+                await req.abort()
+                return
+              } else {
+                url = url2
+                try {
+                  headers.host = new URL(url).host
+                } catch (e) {
+                  this.debug('Invalid URL', url)
+                  await req.abort()
+                  return
+                }
               }
             }
           }
-        }
 
-        if (resourceType === 'document') {
-          // abort iframe request
-          if (req.frame() !== page.mainFrame()) {
-            this.debug('abort', url)
-            return req.abort()
-          }
+          if (resourceType === 'document') {
+            // abort iframe request
+            if (req.frame() !== page.mainFrame()) {
+              this.debug('abort', url)
+              await req.abort()
+              return
+            }
 
-          try {
             if (appendSearchParams) {
               url = new URL(url)
               for (const [name, value] of Object.entries(appendSearchParams)) {
@@ -171,50 +175,66 @@ class Prerenderer {
             }
 
             this.debug(resourceType, url)
-            const res = await this.fetchResource({ resourceType, url, headers, timeout: timeout - 1000 })
+            let res
+            try {
+              res = await this.fetchResource({ resourceType, url, headers, timeout: timeout - 1000 })
+            } catch (e) {
+              this.debug(e)
+              if (e.message === 'PARSE::ERR_INVALID_FILE_TYPE') {
+                reject(e)
+                await req.abort()
+              } else {
+                await req.abort(e.message)
+              }
+
+              return
+            }
+
             this.debug({ url, status: res.status, headers: res.headers })
 
             status = res.status
 
             if ([301, 302].includes(status)) {
               redirect = res.headers.location
-              if (followRedirect) return req.respond(res)
+              if (followRedirect) {
+                await req.respond(res)
+                return
+              }
             }
 
             if (res.body.length) {
-              req.respond(res)
+              await req.respond(res)
             } else {
               resolve({ status, redirect, meta, openGraph, links, html, staticHTML })
-              req.abort()
+              await req.abort()
             }
-          } catch (e) {
-            this.debug(e)
-            if (e.message === 'PARSE::ERR_INVALID_FILE_TYPE') {
-              reject(e)
-              req.abort()
-            } else {
-              req.abort(e.message)
-            }
-          }
-        } else if (['script', 'xhr', 'fetch', 'eventsource', 'other'].includes(resourceType)) {
-          try {
+          } else if (['script', 'xhr', 'fetch', 'eventsource', 'other'].includes(resourceType)) {
             const method = req.method()
             const body = req.postData()
             this.debug(method, resourceType, url)
-            const res = await this.fetchResource({ resourceType, method, url, headers, body, timeout: 5000 })
+            let res
+            try {
+              res = await this.fetchResource({ resourceType, method, url, headers, body, timeout: 5000 })
+            } catch (e) {
+              this.debug(e)
+              await req.abort(e.message)
+              return
+            }
+
             this.debug(url, res.status)
             if (res.body) {
-              req.respond(res)
+              await req.respond(res)
             } else {
-              req.abort()
+              await req.abort()
             }
-          } catch (e) {
-            this.debug(e)
-            req.abort(e.message)
+          } else {
+            this.debug('abort', resourceType, url)
+            await req.abort()
           }
-        } else {
-          this.debug('abort', resourceType, url)
-          req.abort()
+        } catch (e) {
+          // mostly will be chrome connection problem when calling req.respond(), e.g.
+          // WebSocket is not open: readyState 2 (CLOSING)
+          // just ignore
         }
       })
 
