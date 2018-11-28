@@ -122,6 +122,8 @@ class Prerenderer extends EventEmitter {
     return new Promise(async(resolve, reject) => {
       let browser, page
       try {
+        url = new URL(url)
+
         browser = await this.launch()
 
         const timerOpenTab = this.timer('open tab')
@@ -255,8 +257,6 @@ class Prerenderer extends EventEmitter {
       })
 
       try {
-        url = new URL(url)
-
         const timerGotoURL = this.timer(`goto ${url.href}`)
 
         if (userAgent) await page.setUserAgent(userAgent)
