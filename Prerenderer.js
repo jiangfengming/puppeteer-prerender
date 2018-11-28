@@ -1,3 +1,4 @@
+const EventEmitter = require('events')
 const request = require('request')
 const puppeteer = require('puppeteer')
 const { URL } = require('url')
@@ -14,7 +15,7 @@ const ERRORS_MAPPING = {
   ETIMEDOUT: 'timedout'
 }
 
-class Prerenderer {
+class Prerenderer extends EventEmitter {
   constructor({
     debug = false,
     puppeteerLaunchOptions,
@@ -26,6 +27,8 @@ class Prerenderer {
     appendSearchParams,
     rewrites
   } = {}) {
+    super()
+
     if (debug instanceof Function) {
       this.debug = debug
     } else if (debug === true) {
@@ -59,6 +62,14 @@ class Prerenderer {
 
     this.debug('launch the browser with args:', this.puppeteerLaunchOptions)
     this.browser = await puppeteer.launch(this.puppeteerLaunchOptions)
+
+    this.browser.on('disconnected', () => {
+      if (!this.closing) {
+        this.browser = null
+        // only emit 'disconnected' event when the browser is crashed
+        this.emit('disconnected')
+      }
+    })
 
     return this.browser
   }
@@ -236,6 +247,11 @@ class Prerenderer {
           // WebSocket is not open: readyState 2 (CLOSING)
           // just ignore
         }
+      })
+
+      page.on('error', e => {
+        this.debug('page crashed:', url.href, e)
+        reject(e)
       })
 
       try {
@@ -425,8 +441,10 @@ class Prerenderer {
 
   async close() {
     if (this.browser) {
+      this.closing = true
       await this.browser.close()
       this.browser = null
+      this.closing = false
     }
   }
 }
