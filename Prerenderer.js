@@ -122,10 +122,7 @@ class Prerenderer extends EventEmitter {
     return new Promise(async(resolve, reject) => {
       let browser, page
       try {
-        url = new URL(url)
-
         browser = await this.launch()
-
         const timerOpenTab = this.timer('open tab')
         page = await browser.newPage()
         timerOpenTab()
@@ -203,7 +200,7 @@ class Prerenderer extends EventEmitter {
               return
             }
 
-            this.debug({ url, status: res.status, headers: res.headers })
+            this.debug(String(res.status), url, res.headers)
 
             status = res.status
 
@@ -224,7 +221,6 @@ class Prerenderer extends EventEmitter {
           } else if (['script', 'xhr', 'fetch', 'eventsource', 'other'].includes(resourceType)) {
             const method = req.method()
             const body = req.postData()
-            this.debug(method, resourceType, url)
             let res
             try {
               res = await this.fetchResource({ resourceType, method, url, headers, body, timeout: 5000 })
@@ -234,7 +230,7 @@ class Prerenderer extends EventEmitter {
               return
             }
 
-            this.debug(url, res.status)
+            this.debug(String(res.status), method, resourceType, url)
             if (res.body) {
               await req.respond(res)
             } else {
@@ -252,28 +248,28 @@ class Prerenderer extends EventEmitter {
       })
 
       page.on('error', e => {
-        this.debug('page crashed:', url.href, e)
+        this.debug('page crashed:', url, e)
         reject(e)
       })
 
       try {
-        const timerGotoURL = this.timer(`goto ${url.href}`)
+        const timerGotoURL = this.timer(`goto ${url}`)
 
         if (userAgent) await page.setUserAgent(userAgent)
         await page.setRequestInterception(true)
 
         await Promise.race([
-          page.goto(url.href, {
+          page.goto(url, {
             waitUntil: 'networkidle0',
             timeout
-          }),
+          }).then(() => this.debug('networkidle0', url)),
 
-          page.waitFor(() => window.PAGE_READY)
+          page.waitFor(() => window.PAGE_READY).then(() => this.debug('PAGE_READY', url))
         ])
 
         timerGotoURL()
 
-        const timerParseDoc = this.timer('parseDoc')
+        const timerParseDoc = this.timer(`parse ${url}`)
 
         // html
         await page.evaluate(() => {
