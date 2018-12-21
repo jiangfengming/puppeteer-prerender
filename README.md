@@ -43,6 +43,9 @@ Default options:
   // Number. Maximum navigation time in milliseconds.
   timeout: 30000,
 
+  // Number. Minimal time to wait before resolve the page navigation.
+  wait: 0,
+
   // String. Specific user agent to use in this page. The default value is set by the underlying Chromium.
   userAgent: undefined,
 
@@ -113,6 +116,7 @@ These options can be overrided:
 ```js
 {
   timeout,
+  wait,
   userAgent,
   followRedirect,
   extraMeta,
