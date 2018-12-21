@@ -30,7 +30,7 @@
   },
   "devDependencies": {
     "babel-eslint": "^10.0.1",
-    "eslint": "^5.9.0",
+    "eslint": "^5.10.0",
     "eslint-config-enough": "^0.3.4"
   },
   "eslintConfig": {
