@@ -20,7 +20,6 @@ class Prerenderer extends EventEmitter {
     debug = false,
     puppeteerLaunchOptions,
     timeout = 30000,
-    wait = 0,
     userAgent,
     followRedirect = false,
     extraMeta,
@@ -42,7 +41,6 @@ class Prerenderer extends EventEmitter {
 
     this.puppeteerLaunchOptions = puppeteerLaunchOptions
     this.timeout = timeout
-    this.wait = wait
     this.userAgent = userAgent
     this.followRedirect = followRedirect
     this.extraMeta = extraMeta
@@ -115,7 +113,6 @@ class Prerenderer extends EventEmitter {
   render(url, {
     userAgent = this.userAgent,
     timeout = this.timeout,
-    wait = this.wait,
     followRedirect = this.followRedirect,
     extraMeta = this.extraMeta,
     parseOpenGraphOptions = this.parseOpenGraphOptions,
@@ -261,17 +258,13 @@ class Prerenderer extends EventEmitter {
         if (userAgent) await page.setUserAgent(userAgent)
         await page.setRequestInterception(true)
 
-        await Promise.all([
-          new Promise(resolve => setTimeout(resolve, wait)),
+        await Promise.race([
+          page.goto(url, {
+            waitUntil: 'networkidle0',
+            timeout
+          }).then(() => this.debug('networkidle0', url)),
 
-          Promise.race([
-            page.goto(url, {
-              waitUntil: 'networkidle0',
-              timeout
-            }).then(() => this.debug('networkidle0', url)),
-
-            page.waitFor(() => window.PAGE_READY).then(() => this.debug('PAGE_READY', url))
-          ])
+          page.waitFor(() => window.PAGE_READY).then(() => this.debug('PAGE_READY', url))
         ])
 
         timerGotoURL()

@@ -9,7 +9,6 @@ async function main() {
       headless: false
     },
     timeout: 30000,
-    wait: 5000,
     userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36',
     followRedirect: false,
     extraMeta: {
