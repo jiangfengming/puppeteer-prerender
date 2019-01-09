@@ -43,6 +43,9 @@ Default options:
   // Number. Maximum navigation time in milliseconds.
   timeout: 30000,
 
+  // String. Wait until the global variable been set.
+  waitForVariable: undefined,
+
   // String. Specific user agent to use in this page. The default value is set by the underlying Chromium.
   userAgent: undefined,
 
@@ -113,6 +116,7 @@ These options can be overrided:
 ```js
 {
   timeout,
+  waitForVariable,
   userAgent,
   followRedirect,
   extraMeta,
