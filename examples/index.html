@@ -64,6 +64,9 @@ function onPageLoad() {
 <script>alert('IE')</script>
 <![endif]-->
 <a href="https://www.example.com/foo">page foo</a>
-<script>window.PAGE_READY = true</script>
+<script>
+window.PAGE_READY = false
+setTimeout(() => window.PAGE_READY = true, 3000)
+</script>
 </body>
 </html>
