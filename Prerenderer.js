@@ -219,23 +219,7 @@ class Prerenderer extends EventEmitter {
               await req.abort()
             }
           } else if (['script', 'stylesheet', 'xhr', 'fetch', 'eventsource', 'other'].includes(resourceType)) {
-            const method = req.method()
-            const body = req.postData()
-            let res
-            try {
-              res = await this.fetchResource({ resourceType, method, url, headers, body, timeout: 5000 })
-            } catch (e) {
-              this.debug(e)
-              await req.abort(e.message)
-              return
-            }
-
-            this.debug(String(res.status), method, resourceType, url)
-            if (res.body) {
-              await req.respond(res)
-            } else {
-              await req.abort()
-            }
+            req.continue({ url, headers })
           } else {
             this.debug('abort', resourceType, url)
             await req.abort()
