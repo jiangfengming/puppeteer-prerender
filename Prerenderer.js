@@ -1,19 +1,8 @@
 const EventEmitter = require('events')
-const request = require('request')
 const puppeteer = require('puppeteer')
 const { URL } = require('url')
 const { parse, parseMetaFromDocument } = require('parse-open-graph')
 const urlRewrite = require('./urlRewrite')
-
-const ERRORS_MAPPING = {
-  EACCES: 'accessdenied',
-  EHOSTUNREACH: 'addressunreachable',
-  ECONNABORTED: 'connectionaborted',
-  ECONNREFUSED: 'connectionrefused',
-  ECONNRESET: 'connectionreset',
-  ENOTFOUND: 'namenotresolved',
-  ETIMEDOUT: 'timedout'
-}
 
 class Prerenderer extends EventEmitter {
   constructor({
@@ -74,41 +63,6 @@ class Prerenderer extends EventEmitter {
     return this.browser
   }
 
-  fetchResource({ resourceType, method, url, headers, body, timeout }) {
-    return new Promise((resolve, reject) => {
-      const req = request({
-        method,
-        url,
-        headers,
-        body,
-        gzip: true,
-        timeout,
-        followRedirect: false,
-        encoding: null // return body as buffer
-      }, (e, res, body) => {
-        if (e) {
-          reject(new Error(ERRORS_MAPPING[e.code] || 'failed'))
-        } else {
-          delete res.headers['content-disposition']
-          delete res.headers['content-encoding']
-          delete res.headers['content-length']
-
-          resolve({
-            status: res.statusCode,
-            headers: res.headers,
-            body
-          })
-        }
-      }).on('response', res => {
-        if (resourceType === 'document' && res.statusCode >= 200 && res.statusCode <= 299
-          && !res.headers['content-type'].includes('text/html')) {
-          req.abort()
-          reject(new Error('PARSE::ERR_INVALID_FILE_TYPE'))
-        }
-      })
-    })
-  }
-
   // returns: { status, redirect, meta, openGraph, links, html, staticHTML }
   render(url, {
     userAgent = this.userAgent,
@@ -140,94 +94,57 @@ class Prerenderer extends EventEmitter {
       let staticHTML = null
 
       page.on('request', async req => {
-        try {
-          const resourceType = req.resourceType()
-          let url = req.url()
-          const headers = req.headers()
-          delete headers['x-devtools-emulate-network-conditions-client-id']
+        const resourceType = req.resourceType()
+        let url = req.url()
+        const headers = req.headers()
+        delete headers['x-devtools-emulate-network-conditions-client-id']
 
-          if (rewrites) {
-            const url2 = urlRewrite(url, rewrites)
-            if (url !== url2) {
-              this.debug(`${url} rewrites to ${url2}`)
+        if (rewrites) {
+          const url2 = urlRewrite(url, rewrites)
+          if (url !== url2) {
+            this.debug(`${url} rewrites to ${url2}`)
 
-              if (!url2) {
-                this.debug('abort', url)
-                await req.abort()
-                return
-              } else {
-                url = url2
-                try {
-                  headers.host = new URL(url).host
-                } catch (e) {
-                  this.debug('Invalid URL', url)
-                  await req.abort()
-                  return
-                }
-              }
-            }
-          }
-
-          if (resourceType === 'document') {
-            // abort iframe request
-            if (req.frame() !== page.mainFrame()) {
+            if (!url2) {
               this.debug('abort', url)
               await req.abort()
               return
-            }
-
-            if (appendSearchParams) {
-              url = new URL(url)
-              for (const [name, value] of Object.entries(appendSearchParams)) {
-                url.searchParams.append(name, value)
-              }
-              url = url.href
-            }
-
-            this.debug(resourceType, url)
-            let res
-            try {
-              res = await this.fetchResource({ resourceType, url, headers, timeout: timeout - 1000 })
-            } catch (e) {
-              this.debug(e)
-              if (e.message === 'PARSE::ERR_INVALID_FILE_TYPE') {
-                reject(e)
+            } else {
+              url = url2
+              try {
+                headers.host = new URL(url).host
+              } catch (e) {
+                this.debug('Invalid URL', url)
                 await req.abort()
-              } else {
-                await req.abort(e.message)
-              }
-
-              return
-            }
-
-            this.debug(String(res.status), url, res.headers)
-
-            status = res.status
-
-            if ([301, 302].includes(status)) {
-              redirect = res.headers.location
-              if (followRedirect) {
-                await req.respond(res)
                 return
               }
             }
-
-            if (res.body.length) {
-              await req.respond(res)
-            } else {
-              resolve({ status, redirect, meta, openGraph, links, html, staticHTML })
-              await req.abort()
-            }
-          } else if (['script', 'stylesheet', 'xhr', 'fetch', 'eventsource', 'other'].includes(resourceType)) {
-            req.continue({ url, headers })
-          } else {
-            this.debug('abort', resourceType, url)
-            await req.abort()
           }
-        } catch (e) {
-          // mostly will be chrome connection problem when calling req.respond(), e.g.
-          // WebSocket is not open: readyState 2 (CLOSING)
-          // just ignore
+        }
+
+        if (req.isNavigationRequest()) {
+          // abort iframe requests
+          if (req.frame() !== page.mainFrame()) {
+            this.debug('abort', url)
+            await req.abort()
+            return
+          }
+
+          if (appendSearchParams) {
+            url = new URL(url)
+            for (const [name, value] of Object.entries(appendSearchParams)) {
+              url.searchParams.append(name, value)
+            }
+            url = url.href
+          }
+
+          this.debug(resourceType, url)
+          req.continue({ url, headers })
+        } else if (['script', 'stylesheet', 'xhr', 'fetch', 'eventsource', 'other'].includes(resourceType)) {
+          this.debug(resourceType, url)
+          req.continue({ url, headers })
+        } else {
+          this.debug('abort', resourceType, url)
+          await req.abort()
         }
       })
 
@@ -243,13 +160,32 @@ class Prerenderer extends EventEmitter {
         await page.setRequestInterception(true)
 
         const time = Date.now()
-        await page.goto(url, { timeout }).then(() => this.debug('load', url))
+        const res = await page.goto(url, {
+          waitUntil: 'domcontentloaded',
+          timeout
+        })
+
+        this.debug('domcontentloaded', url)
+
+        const redirects = res.request().redirectChain()
+
+        if (redirects.length) {
+          status = redirects[0].response().status()
+          redirect = redirects[0].url()
+
+          if (!followRedirect) {
+            resolve({ status, redirect, meta, openGraph, links, html, staticHTML })
+            return
+          }
+        }
 
         const pageReady = await page.evaluate(() => window.PAGE_READY)
         if (pageReady === false) {
           await page.waitForFunction(() => window.PAGE_READY, {
             timeout: timeout - (Date.now() - time)
-          }).then(() => this.debug('PAGE_READY', url))
+          })
+
+          this.debug('PAGE_READY', url)
         }
 
         timerGotoURL()
