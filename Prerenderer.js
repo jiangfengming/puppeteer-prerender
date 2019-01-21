@@ -177,6 +177,8 @@ class Prerenderer extends EventEmitter {
             resolve({ status, redirect, meta, openGraph, links, html, staticHTML })
             return
           }
+        } else {
+          status = res.status()
         }
 
         const pageReady = await page.evaluate(() => window.PAGE_READY)
