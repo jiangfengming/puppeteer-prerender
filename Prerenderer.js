@@ -13,7 +13,6 @@ class Prerenderer extends EventEmitter {
     followRedirect = false,
     extraMeta,
     parseOpenGraphOptions,
-    appendSearchParams,
     rewrites
   } = {}) {
     super()
@@ -35,7 +34,6 @@ class Prerenderer extends EventEmitter {
     this.extraMeta = extraMeta
     this.parseOpenGraphOptions = parseOpenGraphOptions
     this.browser = null
-    this.appendSearchParams = appendSearchParams
     this.rewrites = rewrites
   }
 
@@ -70,7 +68,6 @@ class Prerenderer extends EventEmitter {
     followRedirect = this.followRedirect,
     extraMeta = this.extraMeta,
     parseOpenGraphOptions = this.parseOpenGraphOptions,
-    appendSearchParams = this.appendSearchParams,
     rewrites = this.rewrites
   } = {}) {
     return new Promise(async(resolve, reject) => {
@@ -127,14 +124,6 @@ class Prerenderer extends EventEmitter {
             this.debug('abort', url)
             await req.abort()
             return
-          }
-
-          if (appendSearchParams) {
-            url = new URL(url)
-            for (const [name, value] of Object.entries(appendSearchParams)) {
-              url.searchParams.append(name, value)
-            }
-            url = url.href
           }
 
           this.debug(resourceType, url)

@@ -56,9 +56,6 @@ Default options:
   // see https://github.com/kasha-io/parse-open-graph#parsemeta-options
   parseOpenGraphOptions: undefined,
   
-  // Object. Intercept the document request and append search params before sending.
-  appendSearchParams: undefined,
-
   // Array. Rewrite URL to another location.
   rewrites: undefined
 }
@@ -76,21 +73,6 @@ Extra meta tags to parse. e.g.:
 
 The property name is the name of property which will be set in `result.meta` object. `selector` is the parameter of `document.querySelector()`
 which used to select the element. `property` is the property of the selected element which contains the value.
-
-#### appendSearchParams
-Intercept the document request and append search params before sending. e.g.:
-
-```js
-{
-  _no_prerender: '1'
-}
-```
-
-If the page URL is http://www.example.com/, it will be rewrited to http://www.example.com?_no_prerender=1 when fetching the document.
-But the address won't change. So `location.href` still is http://www.example.com/
-
-It is used to set a flag on the URL so your server will know this request is from puppeteer-prerender.
-User-Agent alone can't pass through the CDN.
 
 #### rewrites
 ```js
@@ -117,7 +99,6 @@ These options can be overrided:
   followRedirect,
   extraMeta,
   parseOpenGraphOptions,
-  appendSearchParams,
   rewrites
 }
 ```
@@ -222,9 +203,6 @@ Sets the default value of extraMeta.
 
 ### prerender.parseOpenGraphOptions
 Sets the default value of parseOpenGraphOptions.
-
-### prerender.appendSearchParams
-Sets the default value of appendSearchParams.
 
 ## License
 [MIT](LICENSE)
