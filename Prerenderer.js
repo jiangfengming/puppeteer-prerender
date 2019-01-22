@@ -168,6 +168,16 @@ class Prerenderer extends EventEmitter {
           }
         } else {
           status = res.status()
+          const ok = status === 304 || res.ok()
+          if (status === 304) status = 200
+
+          if (!ok) {
+            const text = await res.text()
+            if (!text.length) {
+              resolve({ status, redirect, meta, openGraph, links, html, staticHTML })
+              return
+            }
+          }
         }
 
         const pageReady = await page.evaluate(() => window.PAGE_READY)
