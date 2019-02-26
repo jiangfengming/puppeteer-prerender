@@ -11,10 +11,10 @@ async function main() {
   })
 
   try {
-    const result = await prerender.render('http://localhost:8080/')
+    const result = await prerender.render('http://localhost:8000/set-location.html')
     console.log(result)
 
-    const result2 = await prerender.render('http://localhost:8080/', {
+    const result2 = await prerender.render('http://localhost:8000/set-location.html', {
       followRedirect: true
     })
     console.log(result2)
