@@ -192,15 +192,6 @@ class Prerenderer extends EventEmitter {
       const timerParseDoc = this.timer(`parse ${url}`)
 
       // html
-      await page.evaluate(() => {
-        let baseEl = document.getElementsByTagName('base')[0]
-        if (!baseEl) {
-          baseEl = document.createElement('base')
-          baseEl.href = location.href
-          document.head.prepend(baseEl)
-        }
-      })
-
       html = await page.content()
 
       // open graph
