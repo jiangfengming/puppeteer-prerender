@@ -150,11 +150,11 @@ class Prerenderer extends EventEmitter {
 
       const time = Date.now()
       const res = await page.goto(url, {
-        waitUntil: 'load',
+        waitUntil: 'networkidle0',
         timeout
       })
 
-      this.debug('loaded', url)
+      this.debug('networkidle0', url)
 
       const redirects = res.request().redirectChain()
 
