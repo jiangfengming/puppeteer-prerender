@@ -1,6 +1,6 @@
 {
   "name": "puppeteer-prerender",
-  "version": "0.12.7",
+  "version": "0.12.8-0",
   "description": "Fetch the pre-rendered content, meta, links and Open Graph of a webpage, especially Single-Page Application (SPA)",
   "main": "Prerenderer.js",
   "scripts": {
