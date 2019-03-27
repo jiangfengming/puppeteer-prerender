@@ -121,7 +121,7 @@ class Prerenderer extends EventEmitter {
           navigated = true
           await req.continue({ url, headers })
         } else {
-          await req.respond(req.redirectChain().length ? { body: '' } : { status: 204 })
+          await (req.redirectChain().length ? req.respond({ body: '' }) : req.abort('aborted'))
         }
       } else if (['script', 'xhr', 'fetch', 'eventsource', 'other'].includes(resourceType)) {
         this.debug(resourceType, url)
