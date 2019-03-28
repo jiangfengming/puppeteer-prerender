@@ -10,19 +10,24 @@ async function main() {
   const prerender = new Prerenderer()
 
   try {
-    const { status, redirect, meta, openGraph, links, content } = await prerender.render('https://www.example.com/')
-    console.log(JSON.stringify({ content, status, redirect, meta, openGraph, links }, null, 2))
+    const {
+      status,
+      redirect,
+      meta,
+      openGraph,
+      links,
+      html,
+      staticHTML
+    } = await prerender.render('https://www.example.com/')
   } catch (e) {
     console.error(e)
   }
 
-  prerender.close()
+  await prerender.close()
 }
 
 main()
 ```
-
-See [examples/index.js](examples/index.js)
 
 ## APIs
 

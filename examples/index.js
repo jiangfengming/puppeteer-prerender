@@ -30,9 +30,6 @@ async function main() {
         'sitemap:video',
         'sitemap:video:tag'
       ]
-    },
-    appendSearchParams: {
-      _no_prerender: '1'
     }
   })
 
