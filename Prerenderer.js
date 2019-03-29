@@ -92,19 +92,19 @@ class Prerenderer extends EventEmitter {
       if (rewrites) {
         let url2
         try {
-          url2 = urlRewrite(url, rewrites)
+          url2 = urlRewrite(url, rewrites, true)
         } catch (e) {
           this.debug('url rewrite error.', url)
           return await req.abort()
         }
 
         if (!url2) {
-          this.debug(url, 'rewrites to empty string.')
+          this.debug(url, 'rewrites to null.')
           return await req.abort()
-        } else if (url2 !== url) {
-          this.debug(url, 'rewrites to', url2)
-          url = url2
-          headers.host = new URL(url).host
+        } else if (url2.href !== url) {
+          this.debug(url, 'rewrites to', url2.href)
+          url = url2.href
+          headers.host = url.host
         }
       }
 
