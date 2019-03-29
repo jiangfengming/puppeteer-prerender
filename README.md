@@ -91,6 +91,8 @@ const result = await prerender.render('http://127.0.0.1/foo', {
 The page will load from `https://www.example.com/foo` instead of `http://127.0.0.1/foo`.
 And requests to `https://www.googletagmanager.com/*` will be blocked.
 
+It uses [url-rewrite](https://github.com/kasha-io/url-rewrite) module underlying.
+
 ### prerenderer.render(url, options)
 Prerenders the page of the given `url`.
 
@@ -183,10 +185,7 @@ The `openGraph` object format:
 }
 ```
 
-See [parse-open-graph](https://github.com/fenivana/parse-open-graph#parsemeta) for details.
-
-Due to [this issue](https://github.com/GoogleChrome/puppeteer/issues/3471), `prerenderer.render()` will not reject on `TimeoutError`.
-You can manually set `window.PAGE_READY = true` to tell render function the page is ready, and avoid timeout problem.
+See [parse-open-graph](https://github.com/kasha-io/parse-open-graph#parsemeta-options) for details.
 
 ### prerenderer.close()
 Closes the underlying browser.
