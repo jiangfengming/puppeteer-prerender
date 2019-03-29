@@ -2,7 +2,7 @@ const EventEmitter = require('events')
 const puppeteer = require('puppeteer')
 const { URL } = require('url')
 const { parse, parseMetaFromDocument } = require('parse-open-graph')
-const urlRewrite = require('./urlRewrite')
+const urlRewrite = require('url-rewrite/es6')
 
 class Prerenderer extends EventEmitter {
   constructor({
@@ -90,19 +90,21 @@ class Prerenderer extends EventEmitter {
       const headers = req.headers()
 
       if (rewrites) {
-        const url2 = urlRewrite(url, rewrites)
+        let url2
+        try {
+          url2 = urlRewrite(url, rewrites)
+        } catch (e) {
+          this.debug('url rewrite error.', url)
+          return await req.abort()
+        }
+
         if (!url2) {
-          this.debug(url, 'rewrites to empty string. abort.')
+          this.debug(url, 'rewrites to empty string.')
           return await req.abort()
         } else if (url2 !== url) {
           this.debug(url, 'rewrites to', url2)
           url = url2
-          try {
-            headers.host = new URL(url).host
-          } catch (e) {
-            this.debug('Invalid URL', url)
-            return await req.abort()
-          }
+          headers.host = new URL(url).host
         }
       }
 
