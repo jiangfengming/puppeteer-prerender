@@ -1,6 +1,5 @@
 const EventEmitter = require('events')
 const puppeteer = require('puppeteer')
-const { URL } = require('url')
 const { parse, parseMetaFromDocument } = require('parse-open-graph')
 const urlRewrite = require('url-rewrite/es6')
 
