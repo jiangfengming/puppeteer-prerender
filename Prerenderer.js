@@ -103,7 +103,7 @@ class Prerenderer extends EventEmitter {
         } else if (url2.href !== url) {
           this.debug(url, 'rewrites to', url2.href)
           url = url2.href
-          headers.host = url.host
+          headers.host = url2.host
         }
       }
 
