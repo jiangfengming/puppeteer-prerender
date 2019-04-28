@@ -25,7 +25,7 @@
   "homepage": "https://github.com/kasha-io/puppeteer-prerender#readme",
   "dependencies": {
     "parse-open-graph": "^0.3.2",
-    "puppeteer": "1.14.0-next.1555141000741",
+    "puppeteer": "1.15.0",
     "url-rewrite": "^0.1.2"
   },
   "devDependencies": {
