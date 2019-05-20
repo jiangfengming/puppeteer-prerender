@@ -121,7 +121,7 @@ class Prerenderer extends EventEmitter {
         } else {
           await (req.redirectChain().length ? req.respond({ body: '' }) : req.abort('aborted'))
         }
-      } else if (['script', 'xhr', 'fetch', 'eventsource', 'other'].includes(resourceType)) {
+      } else if (['script', 'xhr', 'fetch'].includes(resourceType)) {
         this.debug(resourceType, url)
         await req.continue({ url, headers })
       } else if (resourceType === 'stylesheet') {
