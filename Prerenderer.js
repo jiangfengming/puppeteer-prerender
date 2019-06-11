@@ -146,7 +146,6 @@ class Prerenderer extends EventEmitter {
       if (userAgent) await page.setUserAgent(userAgent)
       await page.setRequestInterception(true)
 
-      const time = Date.now()
       const res = await page.goto(url, {
         waitUntil: 'networkidle0',
         timeout
@@ -174,15 +173,6 @@ class Prerenderer extends EventEmitter {
             return { status, redirect, meta, openGraph, links, html, staticHTML }
           }
         }
-      }
-
-      const pageReady = await page.evaluate(() => window.PAGE_READY)
-      if (pageReady === false) {
-        await page.waitForFunction(() => window.PAGE_READY, {
-          timeout: timeout - (Date.now() - time)
-        })
-
-        this.debug('PAGE_READY', url)
       }
 
       timerGotoURL()
