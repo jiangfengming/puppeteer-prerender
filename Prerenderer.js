@@ -34,6 +34,9 @@ class Prerenderer extends EventEmitter {
     this.parseOpenGraphOptions = parseOpenGraphOptions
     this.browser = null
     this.rewrites = rewrites
+    this._lastStart = 0
+
+    this._onBrowserDisconnected = this._onBrowserDisconnected.bind(this)
   }
 
   timer(name) {
@@ -44,20 +47,30 @@ class Prerenderer extends EventEmitter {
   }
 
   async launch() {
-    if (this.browser) return this.browser
+    if (this.browser) {
+      // launch a new browser every hour
+      if (this._lastStart + 60 * 60 * 1000 > Date.now()) {
+        return this.browser
+      } else {
+        this.browser.off('disconnected', this._onBrowserDisconnected)
+        setTimeout(() => this.browser.close(), 60 * 1000)
+      }
+    }
 
     this.debug('launch the browser with args:', this.puppeteerLaunchOptions)
     this.browser = await puppeteer.launch(this.puppeteerLaunchOptions)
-
-    this.browser.on('disconnected', () => {
-      if (!this.closing) {
-        this.browser = null
-        // only emit 'disconnected' event when the browser is crashed
-        this.emit('disconnected')
-      }
-    })
+    this.browser.on('disconnected', this._onBrowserDisconnected)
+    this._lastStart = Date.now()
 
     return this.browser
+  }
+
+  _onBrowserDisconnected() {
+    if (!this.closing) {
+      this.browser = null
+      // only emit 'disconnected' event when the browser is crashed
+      this.emit('disconnected')
+    }
   }
 
   // returns: { status, redirect, meta, openGraph, links, html, staticHTML }
