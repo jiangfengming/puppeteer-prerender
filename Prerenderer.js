@@ -41,6 +41,7 @@ class Prerenderer extends EventEmitter {
 
   timer(name) {
     const time = Date.now()
+
     return () => {
       this.debug(`${name}: ${Date.now() - time}ms`)
     }
@@ -130,6 +131,7 @@ class Prerenderer extends EventEmitter {
         // no redirect chain means the navigation is caused by setting `location.href`
         if (!navigated || (followRedirect && req.redirectChain().length)) {
           navigated = true
+          headers.accept = 'text/html'
           await req.continue({ url, headers })
         } else {
           await (req.redirectChain().length ? req.respond({ body: '' }) : req.abort('aborted'))
@@ -156,7 +158,10 @@ class Prerenderer extends EventEmitter {
     try {
       const timerGotoURL = this.timer(`goto ${url}`)
 
-      if (userAgent) await page.setUserAgent(userAgent)
+      if (userAgent) {
+        await page.setUserAgent(userAgent)
+      }
+
       await page.setRequestInterception(true)
 
       const res = await page.goto(url, {
@@ -178,10 +183,14 @@ class Prerenderer extends EventEmitter {
       } else {
         status = res.status()
         const ok = status === 304 || res.ok()
-        if (status === 304) status = 200
+
+        if (status === 304) {
+          status = 200
+        }
 
         if (!ok) {
           const text = await res.text()
+
           if (!text.length) {
             return { status, redirect, meta, openGraph, links, html, staticHTML }
           }
@@ -206,14 +215,27 @@ class Prerenderer extends EventEmitter {
 
       if (openGraph) {
         if (openGraph.og) {
-          if (openGraph.og.title) meta.title = openGraph.og.title
-          if (openGraph.og.description) meta.description = openGraph.og.description
-          if (openGraph.og.image) meta.image = openGraph.og.image[0].url
-          if (openGraph.og.url) meta.canonicalURL = openGraph.og.url
+          if (openGraph.og.title) {
+            meta.title = openGraph.og.title
+          }
+
+          if (openGraph.og.description) {
+            meta.description = openGraph.og.description
+          }
+
+          if (openGraph.og.image) {
+            meta.image = openGraph.og.image[0].url
+          }
+
+          if (openGraph.og.url) {
+            meta.canonicalURL = openGraph.og.url
+          }
         }
 
         if (openGraph.article) {
-          if (openGraph.article.tag) meta.keywords = openGraph.article.tag
+          if (openGraph.article.tag) {
+            meta.keywords = openGraph.article.tag
+          }
         } else if (openGraph.video && openGraph.video.tag) {
           meta.keywords = openGraph.video.tag
         } else if (openGraph.book && openGraph.book.tag) {
@@ -239,6 +261,7 @@ class Prerenderer extends EventEmitter {
         for (let i = 0; i < snapshot.snapshotLength; i++) {
           const el = snapshot.snapshotItem(i)
           const attrNames = el.getAttributeNames()
+
           attrNames.forEach(attr => {
             if (attr.startsWith('on')) {
               el.removeAttribute(attr)
@@ -250,6 +273,7 @@ class Prerenderer extends EventEmitter {
         // and collect links
         let links = new Set()
         const linkEls = document.links
+
         for (const a of linkEls) {
           if (a.protocol === 'javascript:') {
             a.href = '#'
@@ -257,6 +281,7 @@ class Prerenderer extends EventEmitter {
             links.add(a.href)
           }
         }
+
         links = [...links]
 
         // remove conditional comments
@@ -264,28 +289,42 @@ class Prerenderer extends EventEmitter {
         // so actually we can remove all comments
         const nodeIterator = document.createNodeIterator(document.documentElement, NodeFilter.SHOW_COMMENT)
         let node
+
         while (node = nodeIterator.nextNode()) { // eslint-disable-line no-cond-assign
           node.parentNode.removeChild(node)
         }
 
-        if (!meta.title && document.title) meta.title = document.title
+        if (!meta.title && document.title) {
+          meta.title = document.title
+        }
 
-        ;['author', 'description'].forEach(name => {
+        ['author', 'description'].forEach(name => {
           const el = document.querySelector(`meta[name="${name}"]`)
-          if (el) meta[name] = el.content
+
+          if (el) {
+            meta[name] = el.content
+          }
         })
 
         ;['robots', 'keywords'].forEach(name => {
           const el = document.querySelector(`meta[name="${name}"]`)
-          if (el) meta[name] = el.content.split(/\s*,\s*/)
+
+          if (el) {
+            meta[name] = el.content.split(/\s*,\s*/)
+          }
         })
 
         const link = document.querySelector('link[rel="canonical"]')
-        if (link) meta.canonicalURL = link.href
+
+        if (link) {
+          meta.canonicalURL = link.href
+        }
 
         const locales = document.querySelectorAll('link[rel="alternate"][hreflang]')
+
         if (locales.length) {
           meta.locales = []
+
           for (const alt of locales) {
             meta.locales.push({
               hreflang: alt.hreflang,
@@ -295,8 +334,10 @@ class Prerenderer extends EventEmitter {
         }
 
         const media = document.querySelectorAll('link[rel="alternate"][media]')
+
         if (media.length) {
           meta.media = []
+
           for (const m of media) {
             meta.media.push({
               media: m.media,
@@ -307,6 +348,7 @@ class Prerenderer extends EventEmitter {
 
         if (!meta.image) {
           const imgs = document.getElementsByTagName('img')
+
           for (const img of imgs) {
             if (img.width >= 200 && img.height >= 200) {
               meta.image = img.href
@@ -319,6 +361,7 @@ class Prerenderer extends EventEmitter {
           for (const name of Object.keys(extraMeta)) {
             const { selector, property } = extraMeta[name]
             const el = document.querySelector(selector)
+
             if (el) {
               meta[name] = el[property]
             }
