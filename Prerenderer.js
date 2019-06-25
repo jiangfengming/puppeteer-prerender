@@ -2,6 +2,8 @@ const EventEmitter = require('events')
 const puppeteer = require('puppeteer')
 const { parse, parseMetaFromDocument } = require('parse-open-graph')
 const urlRewrite = require('url-rewrite/es6')
+const fs = require('fs')
+const emptyMedia = fs.readFileSync(__dirname + '/empty.wav')
 
 class Prerenderer extends EventEmitter {
   constructor({
@@ -141,9 +143,17 @@ class Prerenderer extends EventEmitter {
         await req.continue({ url, headers })
       } else if (resourceType === 'stylesheet') {
         this.debug(resourceType, url)
+
         await req.respond({
           contentType: 'text/css',
           body: ''
+        })
+      } else if (resourceType === 'media') {
+        this.debug(resourceType, url)
+
+        await req.respond({
+          contentType: 'audio/wav',
+          body: emptyMedia
         })
       } else {
         this.debug('abort', resourceType, url)
