@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+  <head prefix="og: http://ogp.me/ns# sitemap: https://kashajs.github.com/kasha/ns/sitemap#">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>parse-meta-and-static-html</title>
+    <meta http-equiv="Status" content="200">
+    <meta http-equiv="Last-Modified" content="Fri, 25 May 2018 09:19:54 GMT">
+    <meta name="description" content="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.">
+    <meta name="author" content="John Smith">
+    <meta name="keywords" content="hello, world">
+    <link rel="canonical" content="http://127.0.0.1:8080/">
+    <link rel="alternate" hreflang="en" href="https://www.example.com/">
+    <link rel="alternate" hreflang="de" href="https://www.example.com/?lang=de">
+    <link rel="alternate" hreflang="x-default" href="https://www.example.com/">
+    <link rel="alternate" media="only screen and (max-width: 640px)" href="https://m.example.com/">
+    <meta property="og:url" content="http://127.0.0.1:8080/">
+    <meta property="og:title" content="Page Title">
+    <meta property="og:description" content="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.">
+    <meta property="og:image" content="https://www.example.com/thumb.jpg">
+    <meta property="og:site_name" content="My Awesome Site Name">
+    <meta property="og:locale" content="en_US">
+    <meta property="og:locale:alternate" content="de_DE">
+    <meta property="sitemap:changefreq" content="hourly">
+    <meta property="sitemap:priority" content="1">
+    <meta property="sitemap:news:publication:name" content="The Example Times">
+    <meta property="sitemap:news:publication:language" content="en">
+    <meta property="sitemap:news:genres" content="PressRelease, Blog">
+    <meta property="sitemap:news:stock_tickers" content="NASDAQ:A, NASDAQ:B">
+    <meta property="sitemap:image:loc" content="http://examples.opengraphprotocol.us/media/images/train.jpg">
+    <meta property="sitemap:image:caption" content="The caption of the image.">
+    <meta property="sitemap:image:geo_location" content="Limerick, Ireland">
+    <meta property="sitemap:image:title" content="The title of the image.">
+    <meta property="sitemap:image:license" content="https://creativecommons.org/licenses/by/4.0">
+    <meta property="sitemap:image:loc" content="http://examples.opengraphprotocol.us/media/images/75.png">
+    <meta property="sitemap:image:caption" content="caption">
+    <meta property="sitemap:image:geo_location" content="Shanghai, China">
+    <meta property="sitemap:image:title" content="title">
+    <meta property="sitemap:image:license" content="https://creativecommons.org/licenses/by/4.0">
+    <meta property="sitemap:video:thumbnail_loc" content="http://www.example.com/thumbs/123.jpg">
+    <meta property="sitemap:video:title" content="Grilling steaks for summer">
+    <meta property="sitemap:video:tag" content="steak">
+    <meta property="sitemap:video:tag" content="beefsteak">
+    <meta property="sitemap:video:restriction" content="IE GB US CA">
+    <meta property="sitemap:video:restriction:relationship" content="allow">
+    <meta property="sitemap:video:price" content="1.99">
+    <meta property="sitemap:video:price:currency" content="EUR">
+    <meta property="sitemap:video:thumbnail_loc" content="http://www.example.com/thumbs/456.jpg">
+    <meta property="sitemap:video:title" content="Yummy Pork Rib Sour Soup Cooking With Long bean">
+    <meta property="sitemap:video:tag" content="prok">
+    <meta property="sitemap:video:tag" content="bean">
+
+    <script>
+    // staticHTML should trim <script> tags and event attributes
+    function onPageLoad() {
+      console.log('page loaded')
+    }
+    </script>
+  </head>
+
+  <body onload="onPageLoad()">
+    <h1>My awesome website</h1>
+    <a href=" javascript:alert(1)">alert(1)</a>
+
+    <!--[if IE]>
+      IE <= 9
+    <script>alert('IE')</script>
+    <![endif]-->
+
+    <a href="https://www.example.com/foo">page foo</a>
+
+    <script>
+    window.PAGE_READY = false
+    setTimeout(() => window.PAGE_READY = true, 3000)
+    </script>
+  </body>
+</html>

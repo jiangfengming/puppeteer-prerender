@@ -4,19 +4,12 @@ const Prerenderer = require('../')
 
 async function main() {
   const prerender = new Prerenderer({
-    debug: true,
-    puppeteerLaunchOptions: {
-      headless: false
-    },
-    timeout: 30000,
-    userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36',
-    followRedirect: false,
     extraMeta: {
       status: { selector: 'meta[http-equiv="Status" i]', property: 'content' },
       lastModified: { selector: 'meta[http-equiv="Last-Modified" i]', property: 'content' }
     },
+
     parseOpenGraphOptions: {
-      // these tag has attributes
       alias: {
         'sitemap:video:player_loc': 'sitemap:video:player_loc:_',
         'sitemap:video:restriction': 'sitemap:video:restriction:_',
@@ -33,20 +26,8 @@ async function main() {
     }
   })
 
-  try {
-    const { status, redirect, meta, openGraph, links, html, staticHTML } = await prerender.render('https://www.example.dev/', {
-      rewrites: [
-        ['https://www.example.dev', 'https://www.example.com'], // host rewrite
-        [/^https:\/\/www\.googletagmanager\.com\/.*/, ''] // block analytic scripts
-      ]
-    })
-    console.log(html)
-    console.log(staticHTML)
-    console.log(JSON.stringify({ status, redirect, meta, openGraph, links }, null, 2))
-  } catch (e) {
-    console.error(e)
-  }
-
+  const result = await prerender.render('http://localhost:8080/static/parse-meta-and-static-html.html')
+  console.log(JSON.stringify(result, null, 2))
   await prerender.close()
 }
 
