@@ -90,19 +90,21 @@ class Prerenderer extends EventEmitter {
     const page = await browser.newPage()
     timerOpenTab()
 
-    let status = null
-    let redirect = null
-    let meta = null
-    let openGraph = null
-    let links = null
-    let html = null
-    let staticHTML = null
-    let navigated = false
+    const result = {
+      status: null,
+      redirect: null,
+      meta: null,
+      openGraph: null,
+      links: null,
+      html: null,
+      staticHTML: null
+    }
+
+    let navigated = 0
 
     page.on('request', async req => {
       const resourceType = req.resourceType()
       let url = req.url()
-      const headers = req.headers()
 
       if (rewrites) {
         let url2
@@ -119,7 +121,6 @@ class Prerenderer extends EventEmitter {
         } else if (url2.href !== url) {
           this.debug(url, 'rewrites to', url2.href)
           url = url2.href
-          headers.host = url2.host
         }
       }
 
@@ -130,17 +131,20 @@ class Prerenderer extends EventEmitter {
           return await req.abort()
         }
 
-        // no redirect chain means the navigation is caused by setting `location.href`
-        if (!navigated || (followRedirect && req.redirectChain().length)) {
-          navigated = true
-          headers.accept = 'text/html'
-          await req.continue({ url, headers })
+        navigated++
+
+        if (navigated === 1 || followRedirect) {
+          await req.continue({ url })
         } else {
-          await (req.redirectChain().length ? req.respond({ body: '' }) : req.abort('aborted'))
+          await req.respond({
+            status: 200,
+            contentType: 'text/plain',
+            body: 'redirect cancelled'
+          })
         }
       } else if (['script', 'xhr', 'fetch'].includes(resourceType)) {
         this.debug(resourceType, url)
-        await req.continue({ url, headers })
+        await req.continue({ url })
       } else if (resourceType === 'stylesheet') {
         this.debug(resourceType, url)
 
@@ -184,25 +188,32 @@ class Prerenderer extends EventEmitter {
       const redirects = res.request().redirectChain()
 
       if (redirects.length) {
-        status = redirects[0].response().status()
-        redirect = redirects[0].response().headers().location
+        result.status = redirects[0].response().status()
+        result.redirect = redirects[0].response().headers().location
 
         if (!followRedirect) {
-          return { status, redirect, meta, openGraph, links, html, staticHTML }
+          return result
+        }
+      } else if (navigated > 1) { // redirect by js
+        if (!followRedirect) {
+          result.status = 302
+          result.redirect = await page.url()
+
+          return result
         }
       } else {
-        status = res.status()
-        const ok = status === 304 || res.ok()
+        result.status = res.status()
+        const ok = result.status === 304 || res.ok()
 
-        if (status === 304) {
-          status = 200
+        if (result.status === 304) {
+          result.status = 200
         }
 
         if (!ok) {
           const text = await res.text()
 
           if (!text.length) {
-            return { status, redirect, meta, openGraph, links, html, staticHTML }
+            return result
           }
         }
       }
@@ -212,16 +223,16 @@ class Prerenderer extends EventEmitter {
       const timerParseDoc = this.timer(`parse ${url}`)
 
       // html
-      html = await page.content()
+      result.html = await page.content()
 
       // open graph
       const openGraphMeta = await page.evaluate(parseMetaFromDocument)
-      if (openGraphMeta.length) {
-        openGraph = parse(openGraphMeta, parseOpenGraphOptions)
-      }
+      const openGraph = result.openGraph = openGraphMeta.length
+        ? parse(openGraphMeta, parseOpenGraphOptions)
+        : null
 
       // extract meta info from open graph
-      meta = {}
+      const meta = result.meta = {}
 
       if (openGraph) {
         if (openGraph.og) {
@@ -253,7 +264,7 @@ class Prerenderer extends EventEmitter {
         }
       }
 
-      ({ meta, links } = await page.evaluate((meta, extraMeta) => {
+      const metaAndLinks = await page.evaluate((meta, extraMeta) => {
         // staticHTML
         // remove <script> tags
         const scripts = document.getElementsByTagName('script')
@@ -382,12 +393,13 @@ class Prerenderer extends EventEmitter {
           meta: Object.keys(meta).length ? meta : null,
           links: links.length ? links : null
         }
-      }, meta, extraMeta))
+      }, meta, extraMeta)
 
-      staticHTML = await page.content()
+      Object.assign(result, metaAndLinks)
+      result.staticHTML = await page.content()
       timerParseDoc()
 
-      return { status, redirect, meta, openGraph, links, html, staticHTML }
+      return result
     } finally {
       try {
         await page.close()
