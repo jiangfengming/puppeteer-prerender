@@ -56,7 +56,8 @@ class Prerenderer extends EventEmitter {
         return this.browser
       } else {
         this.browser.off('disconnected', this._onBrowserDisconnected)
-        setTimeout(() => this.browser.close(), 60 * 1000)
+        const oldBrowser = this.browser
+        setTimeout(() => oldBrowser.close(), 60 * 1000)
       }
     }
 
