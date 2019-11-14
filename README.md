@@ -81,14 +81,14 @@ which used to select the element. `property` is the property of the selected ele
 
 #### rewrites
 ```js
-const result = await prerender.render('http://127.0.0.1/foo', {
+const result = await prerender.render('https://www.google.com/foo', {
   rewrites: [
-    [/^http:\/\/127\.0\.0\.1\//, 'https://www.example.com/'], // host rewrite
-    [/^https:\/\/www\.googletagmanager\.com\/.*/, ''] // block analytic scripts
+    ['https://www.google.com/:path(.*)', 'https://www.example.com/:path'],
+    ['https://www.googletagmanager.com/(.*)', ''] // block
   ]
 })
 ```
-The page will load from `https://www.example.com/foo` instead of `http://127.0.0.1/foo`.
+The page will load from `https://www.example.com/foo` instead of `https://www.google.com/foo`.
 And requests to `https://www.googletagmanager.com/*` will be blocked.
 
 It uses [url-rewrite](https://github.com/kasha-io/url-rewrite) module underlying.

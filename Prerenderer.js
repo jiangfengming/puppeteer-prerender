@@ -1,7 +1,7 @@
 const EventEmitter = require('events')
 const puppeteer = require('puppeteer')
 const { parse, parseMetaFromDocument } = require('parse-open-graph')
-const urlRewrite = require('url-rewrite/es6')
+const URLRewriter = require('url-rewrite')
 const fs = require('fs')
 const emptyMedia = fs.readFileSync(__dirname + '/empty.wav')
 
@@ -36,7 +36,7 @@ class Prerenderer extends EventEmitter {
     this.parseOpenGraphOptions = parseOpenGraphOptions
     this.browser = null
     this.rewrites = rewrites
-    this._lastStart = 0
+    this._launchedAt = 0
 
     this._onBrowserDisconnected = this._onBrowserDisconnected.bind(this)
   }
@@ -52,19 +52,25 @@ class Prerenderer extends EventEmitter {
   async launch() {
     if (this.browser) {
       // launch a new browser every hour
-      if (this._lastStart + 60 * 60 * 1000 > Date.now()) {
+      if (this._launchedAt + 60 * 60 * 1000 > Date.now()) {
         return this.browser
       } else {
-        this.browser.off('disconnected', this._onBrowserDisconnected)
         const oldBrowser = this.browser
+        oldBrowser.off('disconnected', this._onBrowserDisconnected)
         setTimeout(() => oldBrowser.close(), 60 * 1000)
+        this._launch()
+        return oldBrowser
       }
+    } else {
+      return this._launch()
     }
+  }
 
+  async _launch() {
+    this._launchedAt = Date.now()
     this.debug('launch the browser with args:', this.puppeteerLaunchOptions)
     this.browser = await puppeteer.launch(this.puppeteerLaunchOptions)
     this.browser.on('disconnected', this._onBrowserDisconnected)
-    this._lastStart = Date.now()
 
     return this.browser
   }
@@ -87,6 +93,7 @@ class Prerenderer extends EventEmitter {
     rewrites = this.rewrites
   } = {}) {
     const browser = await this.launch()
+    const urlRewriter = rewrites && new URLRewriter(rewrites)
     const timerOpenTab = this.timer('open tab')
     const page = await browser.newPage()
     timerOpenTab()
@@ -107,21 +114,22 @@ class Prerenderer extends EventEmitter {
       const resourceType = req.resourceType()
       let url = req.url()
 
-      if (rewrites) {
-        let url2
+      if (urlRewriter) {
+        let urlRewrited
+
         try {
-          url2 = urlRewrite(url, rewrites, true)
+          urlRewrited = urlRewriter.from(url)
         } catch (e) {
           this.debug('url rewrite error.', url)
           return await req.abort()
         }
 
-        if (!url2) {
+        if (!urlRewrited) {
           this.debug(url, 'rewrites to null.')
           return await req.abort()
-        } else if (url2.href !== url) {
-          this.debug(url, 'rewrites to', url2.href)
-          url = url2.href
+        } else if (urlRewrited !== url) {
+          this.debug(url, 'rewrites to', urlRewrited)
+          url = urlRewrited
         }
       }
 

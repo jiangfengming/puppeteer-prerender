@@ -25,13 +25,13 @@
   "homepage": "https://github.com/kasha-io/puppeteer-prerender#readme",
   "dependencies": {
     "parse-open-graph": "^0.3.2",
-    "puppeteer": "^1.19.0",
-    "url-rewrite": "^0.1.2"
+    "puppeteer": "^2.0.0",
+    "url-rewrite": "^0.4.0"
   },
   "devDependencies": {
-    "eslint": "^6.1.0",
-    "eslint-config-enough": "^0.3.5",
-    "koa": "^2.7.0",
+    "eslint": "^6.6.0",
+    "eslint-config-enough": "^0.3.8",
+    "koa": "^2.11.0",
     "koa-mount": "^4.0.0",
     "koa-static": "^5.0.0"
   },
